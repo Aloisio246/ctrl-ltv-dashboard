@@ -1,11 +1,12 @@
-import { useInView, animate } from "framer-motion";
+import { useInView } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { formatMetric } from "@/lib/format";
 
+// Simple rAF-based count-up. Runs once on first view.
 export function CountUp({
   value,
   format,
-  duration = 1.2,
+  duration = 1200,
 }: {
   value: number;
   format: "number" | "currency" | "percent";
@@ -17,12 +18,19 @@ export function CountUp({
 
   useEffect(() => {
     if (!inView) return;
-    const controls = animate(0, value, {
-      duration,
-      ease: [0.2, 0, 0, 1],
-      onUpdate: (v) => setDisplay(v),
-    });
-    return () => controls.stop();
+    let raf = 0;
+    const start = performance.now();
+    const from = 0;
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const v = from + (value - from) * ease(t);
+      setDisplay(v);
+      if (t < 1) raf = requestAnimationFrame(step);
+      else setDisplay(value);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
   }, [inView, value, duration]);
 
   return <span ref={ref}>{formatMetric(display, format)}</span>;
