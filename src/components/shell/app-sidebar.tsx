@@ -54,7 +54,7 @@ export function AppSidebar() {
                 }}
               >
                 <Link
-                  to={mod.to}
+                  to={mod.to as string as never}
                   className={cn(
                     "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm outline-none transition-colors",
                     "hover:bg-sidebar-accent/70 focus-visible:ring-2 focus-visible:ring-ring",

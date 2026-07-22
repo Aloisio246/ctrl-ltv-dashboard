@@ -48,7 +48,7 @@ export function CommandCenterProvider({ children }: { children: ReactNode }) {
   const go = useCallback(
     (to: string) => {
       setIsOpen(false);
-      navigate({ to });
+      navigate({ to: to as never });
     },
     [navigate],
   );
