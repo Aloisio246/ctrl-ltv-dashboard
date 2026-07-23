@@ -85,7 +85,7 @@ export function AppSidebar() {
                   )}
                   {!collapsed && mod.phase === "planned" && (
                     <span className="relative z-10 ml-auto rounded-full border border-border/60 bg-background/30 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                      soon
+                      em breve
                     </span>
                   )}
                 </Link>
