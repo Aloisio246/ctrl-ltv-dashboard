@@ -40,7 +40,7 @@ function DashboardPage() {
       >
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            Aquisora HQ · Growth OS
+            CTRL LTV · GROWTH OS
           </div>
           <h1 className="mt-1 truncate font-display text-3xl font-bold tracking-tight md:text-4xl">
             Visão geral

@@ -2,6 +2,7 @@ import { Bell, Search, Activity } from "lucide-react";
 import { motion } from "framer-motion";
 import { motion as m } from "@/lib/motion";
 import { useCommandCenter } from "@/components/command-center";
+import { MobileNav } from "@/components/shell/mobile-nav";
 
 export function Topbar() {
   const { open } = useCommandCenter();
@@ -15,8 +16,11 @@ export function Topbar() {
       transition={{ duration: m.duration.base, ease: m.ease.enter, delay: 0.08 }}
       className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border/60 bg-background/70 px-4 backdrop-blur-md md:px-6"
     >
+      <MobileNav />
+
       <button
         onClick={open}
+        aria-label="Abrir busca global"
         className="group flex h-10 min-w-0 flex-1 items-center gap-2.5 rounded-lg border border-border/70 bg-surface/70 px-3 text-left text-sm text-muted-foreground transition-colors hover:border-lime/40 hover:text-foreground md:max-w-md"
       >
         <Search className="h-4 w-4 shrink-0" />
@@ -45,11 +49,11 @@ export function Topbar() {
 
       <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-surface/60 px-2 py-1.5">
         <div className="grid h-7 w-7 place-items-center rounded-md bg-gradient-to-br from-lime to-violet text-[11px] font-bold text-lime-foreground">
-          RF
+          AI
         </div>
         <div className="hidden leading-tight sm:block">
-          <div className="text-xs font-medium">Rafael Fonseca</div>
-          <div className="text-[10px] text-muted-foreground">Aquisora HQ</div>
+          <div className="text-xs font-medium">Aloisio Isidio</div>
+          <div className="text-[10px] text-muted-foreground">Ctrl LTV</div>
         </div>
       </div>
     </motion.header>
