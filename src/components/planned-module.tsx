@@ -60,7 +60,7 @@ export function PlannedModule({
             Voltar ao dashboard
           </Link>
           <span className="rounded-md border border-border/60 bg-surface/60 px-3 py-1.5">
-            Nenhum backend conectado nesta fase
+            Módulo ainda não conectado ao backend
           </span>
         </div>
       </motion.div>
