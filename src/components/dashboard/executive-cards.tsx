@@ -1,11 +1,11 @@
 import { motion } from "framer-motion";
-import { metrics } from "@/lib/mock/dashboard";
+import { metrics, type MetricCard } from "@/lib/mock/dashboard";
 import { CountUp } from "@/components/count-up";
 import { motion as m, fadeUp } from "@/lib/motion";
 import { pct } from "@/lib/format";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
-export function ExecutiveCards() {
+export function ExecutiveCards({ data = metrics }: { data?: MetricCard[] }) {
   return (
     <section>
       <div className="mb-3 flex items-center justify-between">
@@ -21,7 +21,7 @@ export function ExecutiveCards() {
         variants={{ hidden: {}, show: { transition: { staggerChildren: m.stagger.tight, delayChildren: 0.15 } } }}
         className="grid grid-cols-2 gap-3 md:grid-cols-4"
       >
-        {metrics.map((metric) => {
+        {data.map((metric) => {
           const positive = metric.delta >= 0;
           const Trend = positive ? TrendingUp : TrendingDown;
           return (

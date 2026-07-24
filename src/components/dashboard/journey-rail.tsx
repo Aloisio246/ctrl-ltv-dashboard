@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
-import { journey } from "@/lib/mock/dashboard";
+import { journey, type JourneyStage } from "@/lib/mock/dashboard";
 import { motion as m, fadeUp } from "@/lib/motion";
 import { pct, num } from "@/lib/format";
 import { ArrowRight } from "lucide-react";
 
-export function JourneyRail() {
+export function JourneyRail({ data = journey }: { data?: JourneyStage[] }) {
   return (
     <motion.section
       initial={{ opacity: 0, y: 12 }}
@@ -29,7 +29,7 @@ export function JourneyRail() {
       <div className="relative">
         <div className="pointer-events-none absolute left-0 right-0 top-[42px] hidden h-[2px] bg-gradient-to-r from-lime/0 via-lime/40 to-violet/40 lg:block" />
         <ol className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-          {journey.map((stage, i) => {
+          {data.map((stage, i) => {
             const isLast = i === journey.length - 1;
             return (
               <motion.li
