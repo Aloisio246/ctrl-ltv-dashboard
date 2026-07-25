@@ -41,9 +41,11 @@ export function EmptyState({
 export function ApiUnavailableState({
   className,
   onRetry,
+  message,
 }: {
   className?: string;
   onRetry?: () => void;
+  message?: string;
 }) {
   return (
     <div className={cn("flex flex-col items-center justify-center gap-3 rounded-xl border border-warning/30 bg-warning/5 py-10 text-center", className)}>
@@ -52,7 +54,7 @@ export function ApiUnavailableState({
       </div>
       <div className="max-w-sm space-y-1">
         <h3 className="text-sm font-semibold text-foreground">API indisponível</h3>
-        <p className="text-xs text-muted-foreground">Ainda não conectamos o backend do Ctrl LTV. Os dados exibidos são simulados.</p>
+        <p className="text-xs text-muted-foreground">{message ?? "Ainda não conectamos o backend do Ctrl LTV. Os dados exibidos são simulados."}</p>
       </div>
       {onRetry && (
         <button

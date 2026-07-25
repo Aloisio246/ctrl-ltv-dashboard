@@ -34,6 +34,69 @@ export type Activity = {
   createdAt: string;
 };
 
+export type CaptureRun = {
+  id: string;
+  source: string;
+  query: string | null;
+  status: string;
+  totalFound: number;
+  acceptedCount: number;
+  duplicateCount: number;
+  errorCount: number;
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+};
+
+export type CaptureRecord = {
+  id: string;
+  runId: string;
+  externalId: string | null;
+  name: string;
+  normalizedName: string;
+  website: string | null;
+  phone: string | null;
+  city: string | null;
+  state: string | null;
+  country: string;
+  sourceUrl: string | null;
+  status: "pending" | "approved" | "rejected" | "promoted";
+  companyId: string | null;
+  createdAt: string;
+};
+
+export type Company = {
+  id: string;
+  name: string;
+  website: string | null;
+  phone: string | null;
+  city: string | null;
+  state: string | null;
+  country: string;
+  source: string;
+};
+
+export type Prospect = {
+  id: string;
+  companyId: string;
+  ownerUserId: string | null;
+  status: "new" | "contacted" | "qualified" | "proposal" | "negotiation" | "won" | "lost" | "archived";
+  temperature: "cold" | "warm" | "hot";
+  score: number;
+  nextFollowUpAt: string | null;
+  createdAt: string;
+};
+
+export type Opportunity = { id: string; prospectId: string; stage: string; amount: string | number; currency: string; expectedCloseAt: string | null; lostReason: string | null; createdAt: string };
+export type Client = { id: string; companyId: string | null; status: string; startedAt: string; cancelledAt: string | null; notes: string | null; createdAt: string };
+export type Contract = { id: string; clientId: string; status: string; startedAt: string; endedAt: string | null; monthlyValue: string | number; setupFee: string | number; currency: string; createdAt: string };
+export type Invoice = { id: string; clientId: string; contractId: string | null; number: string; status: string; issueDate: string; dueDate: string; subtotal: string | number; currency: string };
+export type HealthScore = { id: string; clientId: string; score: number; status: string; reasons: string[] | null; measuredAt: string };
+export type MetricsSummary = DashboardSummary["metrics"];
+export type Conversation = { id: string; externalId: string; status: "open" | "pending" | "closed"; subject: string | null; lastMessageAt: string | null; channel: string; channelLabel: string | null; unreadCount: number; lastMessage: { body: string; direction: string; createdAt: string } | null };
+export type ApprovalBatch = { id: string; title: string; channel: string; status: string; notificationStatus: string; createdAt: string; updatedAt: string };
+export type Me = { user: { id: string; email: string; displayName: string }; activeMembership: { organizationId: string; organizationName: string; role: string }; memberships: Array<{ organizationId: string; organizationName: string; role: string }> };
+
 export class ApiUnavailableError extends Error {
   constructor(message = "API indisponível") {
     super(message);
@@ -95,3 +158,64 @@ export async function fetchDashboardSummary() {
 export async function fetchActivities() {
   return apiFetch<Activity[]>("/v1/activities?limit=50&offset=0");
 }
+
+export async function fetchCaptureRuns() {
+  return apiFetch<CaptureRun[]>("/v1/capture/runs?limit=50&offset=0");
+}
+
+export async function fetchCaptureRecords(status?: CaptureRecord["status"]) {
+  const query = status ? `&status=${status}` : "";
+  return apiFetch<CaptureRecord[]>(`/v1/capture/records?limit=100&offset=0${query}`);
+}
+
+export async function createCaptureRun(input: { source: string; query?: string }) {
+  return apiFetch<CaptureRun>("/v1/capture/runs", {
+    method: "POST",
+    body: JSON.stringify({ ...input, metadata: { mode: "local-beta" } }),
+  });
+}
+
+export async function reviewCaptureRecord(id: string, status: "approved" | "rejected") {
+  return apiFetch<CaptureRecord>(`/v1/capture/records/${id}/review`, {
+    method: "POST",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function promoteCaptureRecord(id: string) {
+  return apiFetch<{ record: CaptureRecord; company: Company; prospect: Prospect }>(`/v1/capture/records/${id}/promote`, {
+    method: "POST",
+  });
+}
+
+export async function fetchCompanies() {
+  return apiFetch<Company[]>("/v1/companies");
+}
+
+export async function fetchProspects() {
+  return apiFetch<Prospect[]>("/v1/prospects");
+}
+
+export async function createProspect(input: {
+  companyId: string;
+  status: Prospect["status"];
+  temperature: Prospect["temperature"];
+  score: number;
+  nextFollowUpAt?: string;
+}) {
+  return apiFetch<Prospect>("/v1/prospects", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function fetchOpportunities() { return apiFetch<Opportunity[]>("/v1/opportunities?limit=100&offset=0"); }
+export async function fetchClients() { return apiFetch<Client[]>("/v1/clients?limit=100&offset=0"); }
+export async function fetchContracts() { return apiFetch<Contract[]>("/v1/contracts?limit=100&offset=0"); }
+export async function fetchInvoices() { return apiFetch<Invoice[]>("/v1/invoices?limit=100&offset=0"); }
+export async function fetchHealthScores() { return apiFetch<HealthScore[]>("/v1/retention/health?limit=100&offset=0"); }
+export async function fetchMetricsSummary() { return apiFetch<MetricsSummary>("/v1/metrics/summary"); }
+export async function fetchClientLtv(id: string) { return apiFetch<{ clientId: string; realizedRevenue: string; realizedCost: string; mrr: string; monthsActive: number; realizedLtv: number }>(`/v1/metrics/clients/${id}/ltv`); }
+export async function fetchConversations() { return apiFetch<Conversation[]>("/v1/inbox/conversations?limit=100&offset=0"); }
+export async function fetchApprovalBatches() { return apiFetch<ApprovalBatch[]>("/v1/approval-batches?limit=100&offset=0"); }
+export async function fetchMe() { return apiFetch<Me>("/v1/me"); }

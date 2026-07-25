@@ -1,29 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PlannedModule } from "@/components/planned-module";
+import { useEffect, useState } from "react";
+import { CircleDollarSign, FileText, TrendingUp } from "lucide-react";
 import { getModule } from "@/lib/modules";
+import { fetchContracts, fetchInvoices, fetchMetricsSummary, type Contract, type Invoice, type MetricsSummary } from "@/lib/api-client";
+import { ApiUnavailableState, EmptyState } from "@/components/states";
 
 const mod = getModule("finance")!;
+export const Route = createFileRoute("/_shell/finance")({ head: () => ({ meta: [{ title: `${mod.label} · Ctrl LTV` }] }), component: FinancePage });
 
-export const Route = createFileRoute("/_shell/finance")({
-  head: () => ({
-    meta: [
-      { title: `${mod.label} · Ctrl LTV` },
-      { name: "description", content: mod.description },
-      { property: "og:title", content: `${mod.label} · Ctrl LTV` },
-      { property: "og:description", content: mod.description },
-    ],
-  }),
-  component: () => (
-    <PlannedModule
-      title={mod.label}
-      description={mod.description}
-      icon={<mod.icon className="h-5 w-5" />}
-      bullets={[
-        "Contratos, cobranças, pagamentos e custos por cliente",
-        "MRR, receita recebida, ticket médio e inadimplência",
-        "Receita da agência separada da verba de anúncios",
-        "Margem por cliente, serviço e origem",
-      ]}
-    />
-  ),
-});
+function FinancePage() {
+  const [metrics, setMetrics] = useState<MetricsSummary | null>(null); const [contracts, setContracts] = useState<Contract[]>([]); const [invoices, setInvoices] = useState<Invoice[]>([]); const [error, setError] = useState<string | null>(null);
+  useEffect(() => { Promise.all([fetchMetricsSummary(), fetchContracts(), fetchInvoices()]).then(([metricResult, contractResult, invoiceResult]) => { if (!metricResult.ok || !contractResult.ok || !invoiceResult.ok) setError("Não foi possível carregar o financeiro local."); else { setMetrics(metricResult.data); setContracts(contractResult.data); setInvoices(invoiceResult.data); } }); }, []);
+  const money = (value: string | number) => Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  return <div className="space-y-6"><header><div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-lime"><CircleDollarSign className="h-4 w-4" /> Receita e margem</div><h1 className="mt-2 font-display text-3xl font-bold">{mod.label}</h1><p className="mt-2 text-sm text-muted-foreground">Separe receita da operação, custos e verba de mídia.</p></header>{error && <ApiUnavailableState message={error} />}{metrics && <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[{ label: "MRR", value: money(metrics.mrr) }, { label: "Receita recebida", value: money(metrics.realizedRevenue) }, { label: "Custos", value: money(metrics.realizedCost) }, { label: "Margem", value: money(metrics.margin) }].map((item) => <article key={item.label} className="surface-card p-5"><div className="text-xs text-muted-foreground">{item.label}</div><div className="mt-2 font-display text-2xl font-bold">{item.value}</div></article>)}</div>}{!error && contracts.length === 0 && invoices.length === 0 && <EmptyState title="Nenhum movimento financeiro" description="Contratos e cobranças aparecerão nesta visão." />}{contracts.length > 0 && <section className="surface-card p-5"><div className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-lime" /><h2 className="font-display text-lg font-semibold">Contratos</h2></div><div className="mt-4 space-y-2">{contracts.map((contract) => <div key={contract.id} className="flex items-center justify-between rounded-lg border border-border/50 bg-surface/40 p-3 text-sm"><span>Cliente {contract.clientId.slice(0, 8)} · <span className="capitalize">{contract.status}</span></span><strong>{money(contract.monthlyValue)} / mês</strong></div>)}</div></section>}{invoices.length > 0 && <section className="surface-card p-5"><div className="flex items-center gap-2"><FileText className="h-4 w-4 text-lime" /><h2 className="font-display text-lg font-semibold">Cobranças</h2></div><div className="mt-4 space-y-2">{invoices.map((invoice) => <div key={invoice.id} className="flex items-center justify-between rounded-lg border border-border/50 bg-surface/40 p-3 text-sm"><span>{invoice.number} · <span className="capitalize">{invoice.status}</span></span><strong>{money(invoice.subtotal)}</strong></div>)}</div></section>}</div>;
+}
