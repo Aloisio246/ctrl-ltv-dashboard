@@ -95,6 +95,7 @@ export type HealthScore = { id: string; clientId: string; score: number; status:
 export type MetricsSummary = DashboardSummary["metrics"];
 export type Conversation = { id: string; externalId: string; status: "open" | "pending" | "closed"; subject: string | null; lastMessageAt: string | null; channel: string; channelLabel: string | null; unreadCount: number; lastMessage: { body: string; direction: string; createdAt: string } | null };
 export type ApprovalBatch = { id: string; title: string; channel: string; status: string; notificationStatus: string; createdAt: string; updatedAt: string };
+export type Me = { user: { id: string; email: string; displayName: string }; activeMembership: { organizationId: string; organizationName: string; role: string }; memberships: Array<{ organizationId: string; organizationName: string; role: string }> };
 
 export class ApiUnavailableError extends Error {
   constructor(message = "API indisponível") {
@@ -217,3 +218,4 @@ export async function fetchMetricsSummary() { return apiFetch<MetricsSummary>("/
 export async function fetchClientLtv(id: string) { return apiFetch<{ clientId: string; realizedRevenue: string; realizedCost: string; mrr: string; monthsActive: number; realizedLtv: number }>(`/v1/metrics/clients/${id}/ltv`); }
 export async function fetchConversations() { return apiFetch<Conversation[]>("/v1/inbox/conversations?limit=100&offset=0"); }
 export async function fetchApprovalBatches() { return apiFetch<ApprovalBatch[]>("/v1/approval-batches?limit=100&offset=0"); }
+export async function fetchMe() { return apiFetch<Me>("/v1/me"); }

@@ -38,7 +38,7 @@ export const MODULES: ModuleDef[] = [
     description: "Fontes, execuções e resultados brutos antes de virarem prospects.",
     to: "/capture",
     icon: Radar,
-    phase: "planned",
+    phase: "live",
   },
   {
     key: "prospects",
@@ -46,7 +46,7 @@ export const MODULES: ModuleDef[] = [
     description: "Base qualificada com score, canal elegível e próxima ação.",
     to: "/prospects",
     icon: Users,
-    phase: "planned",
+    phase: "live",
   },
   {
     key: "pipeline",
@@ -54,7 +54,7 @@ export const MODULES: ModuleDef[] = [
     description: "Kanban comercial da negociação até o ganho.",
     to: "/pipeline",
     icon: KanbanSquare,
-    phase: "planned",
+    phase: "live",
   },
   {
     key: "inbox",
@@ -62,7 +62,7 @@ export const MODULES: ModuleDef[] = [
     description: "Caixa de entrada omnichannel unificada por prospect.",
     to: "/inbox",
     icon: MessagesSquare,
-    phase: "planned",
+    phase: "live",
   },
   {
     key: "approvals",
@@ -70,7 +70,7 @@ export const MODULES: ModuleDef[] = [
     description: "Lotes de comunicação preparados aguardando revisão.",
     to: "/approvals",
     icon: ShieldCheck,
-    phase: "planned",
+    phase: "live",
   },
   {
     key: "activities",
@@ -78,7 +78,7 @@ export const MODULES: ModuleDef[] = [
     description: "Follow-ups, reuniões, propostas e tarefas do time.",
     to: "/activities",
     icon: CalendarClock,
-    phase: "planned",
+    phase: "live",
   },
   {
     key: "clients",
@@ -86,7 +86,7 @@ export const MODULES: ModuleDef[] = [
     description: "Empresas ativas, serviços contratados e histórico.",
     to: "/clients",
     icon: Building2,
-    phase: "planned",
+    phase: "live",
   },
   {
     key: "finance",
@@ -94,7 +94,7 @@ export const MODULES: ModuleDef[] = [
     description: "Contratos, cobranças, pagamentos, custos e MRR.",
     to: "/finance",
     icon: Wallet,
-    phase: "planned",
+    phase: "live",
   },
   {
     key: "retention",
@@ -102,7 +102,7 @@ export const MODULES: ModuleDef[] = [
     description: "Saúde, riscos, renovações e churn dos clientes.",
     to: "/retention",
     icon: HeartPulse,
-    phase: "planned",
+    phase: "live",
   },
   {
     key: "reports",
@@ -110,7 +110,7 @@ export const MODULES: ModuleDef[] = [
     description: "Conversão, receita, margem, CAC e LTV por dimensão.",
     to: "/reports",
     icon: BarChart3,
-    phase: "planned",
+    phase: "live",
   },
   {
     key: "settings",
