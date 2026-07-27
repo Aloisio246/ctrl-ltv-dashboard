@@ -2,13 +2,13 @@
 
 Central premium de operação **da captação ao LTV**: captação → prospecção → negociação → cliente → receita → retenção → LTV, em uma única interface.
 
-## Fase atual — Fase 0 (Frontend Only)
+## Fase atual — Beta local
 
-Esta entrega contém **apenas o frontend** da plataforma. Nada de backend real está habilitado nesta fase:
+O frontend beta roda localmente conectado à API própria em Docker. O projeto continua sem Supabase e sem Lovable Cloud:
 
-- **Sem Supabase, sem Lovable Cloud Database, sem autenticação, sem Edge Functions.**
-- Dados exibidos são simulados e ficam centralizados em `src/lib/mock/`.
-- O cliente HTTP (`src/lib/api-client.ts`) está preparado para consumir uma API externa via `VITE_API_URL`, mas não faz chamadas reais agora.
+- **Sem Supabase, sem Lovable Cloud Database e sem Edge Functions.**
+- A autenticação e os dados operacionais são fornecidos pelo backend local em `backend-foundation`.
+- O cliente HTTP (`src/lib/api-client.ts`) usa `VITE_API_URL` para acessar a API local ou uma API externa.
 
 ## Stack
 
@@ -38,6 +38,24 @@ bun run build
 bun run build:dev
 ```
 
+## Rodar no Docker Desktop
+
+Com a API local ativa na porta 4000:
+
+```sh
+copy .env.docker.example .env
+docker compose up -d --build
+```
+
+Depois acesse [http://localhost:8081](http://localhost:8081). O frontend usa `host.docker.internal` para alcançar a API publicada pelo Docker Desktop. Para não deixar credenciais no arquivo de configuração, remova `VITE_API_EMAIL` e `VITE_API_PASSWORD` do `.env` e use a tela de login.
+
+Para acompanhar ou parar o frontend:
+
+```sh
+docker compose logs -f frontend
+docker compose down
+```
+
 ## Variáveis de ambiente
 
 | Variável        | Uso                                                                 |
@@ -56,17 +74,17 @@ VITE_API_URL=https://api.exemplo.com
 | --------------- | ------------------------------------------ |
 | `/`             | redireciona para `/dashboard`              |
 | `/dashboard`    | **implementado** — visão executiva completa |
-| `/capture`      | placeholder — planejado                    |
-| `/prospects`    | placeholder — planejado                    |
-| `/pipeline`     | placeholder — planejado                    |
-| `/inbox`        | placeholder — planejado                    |
-| `/approvals`    | placeholder — planejado                    |
-| `/activities`   | placeholder — planejado                    |
-| `/clients`      | placeholder — planejado                    |
-| `/finance`      | placeholder — planejado                    |
-| `/retention`    | placeholder — planejado                    |
-| `/reports`      | placeholder — planejado                    |
-| `/settings`     | placeholder — planejado                    |
+| `/capture`      | integrado à API local                      |
+| `/prospects`    | integrado à API local                      |
+| `/pipeline`     | integrado à API local                      |
+| `/inbox`        | integrado à API local                      |
+| `/approvals`    | integrado à API local                      |
+| `/activities`   | integrado à API local                      |
+| `/clients`      | integrado à API local                      |
+| `/finance`      | integrado à API local                      |
+| `/retention`    | integrado à API local                      |
+| `/reports`      | integrado à API local                      |
+| `/settings`     | integrado à API local                      |
 
 ## GitHub
 
@@ -75,8 +93,8 @@ Este projeto foi construído para viver também fora do Lovable. Após conectar 
 1. Conecte via **GitHub → Connect** no editor do Lovable.
 2. Toda alteração feita no Lovable é comitada automaticamente na branch principal do repositório.
 3. Trabalhando localmente, mantenha `main` sincronizado (`git pull` antes de novos commits, `git push` depois) para evitar divergência com o editor.
-4. Backend, PostgreSQL, Redis, filas, workers e integrações reais rodarão em Docker/VM em fases posteriores — este repositório permanece dedicado ao frontend.
+4. Backend, PostgreSQL, Redis, filas, workers e integrações reais rodam no stack Docker/VM separado; este repositório permanece dedicado ao frontend.
 
 ## Aviso
 
-Nenhum banco de dados ou serviço backend está habilitado nesta fase. Não habilite Supabase / Lovable Cloud nesta etapa: o backend será conectado por API externa em uma fase posterior.
+Não habilite Supabase / Lovable Cloud. O backend é próprio e acessado pelo frontend através de `VITE_API_URL`.

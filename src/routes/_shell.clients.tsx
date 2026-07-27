@@ -1,21 +1,304 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { Building2, HeartPulse, Search } from "lucide-react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Building2, HeartPulse, Plus, Search, Sparkles } from "lucide-react";
 import { getModule } from "@/lib/modules";
-import { Input } from "@/components/ui/input";
-import { fetchClients, fetchCompanies, fetchContracts, type Client, type Company, type Contract } from "@/lib/api-client";
+import {
+  createClient,
+  fetchClientLtv,
+  fetchClients,
+  fetchCompanies,
+  fetchContracts,
+  type Client,
+  type Company,
+  type Contract,
+} from "@/lib/api-client";
 import { ApiUnavailableState, EmptyState } from "@/components/states";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 const mod = getModule("clients")!;
+const statuses: Array<{ value: Client["status"]; label: string }> = [
+  { value: "onboarding", label: "Onboarding" },
+  { value: "active", label: "Ativo" },
+  { value: "paused", label: "Pausado" },
+  { value: "at_risk", label: "Em risco" },
+];
+
+function toIsoDate(value: string) {
+  return value ? new Date(`${value}T00:00:00`).toISOString() : undefined;
+}
 
 export const Route = createFileRoute("/_shell/clients")({
-  head: () => ({ meta: [{ title: `${mod.label} · Ctrl LTV` }, { name: "description", content: mod.description }] }),
+  head: () => ({
+    meta: [{ title: `${mod.label} · Ctrl LTV` }, { name: "description", content: mod.description }],
+  }),
   component: ClientsPage,
 });
 
 function ClientsPage() {
-  const [clients, setClients] = useState<Client[]>([]); const [companies, setCompanies] = useState<Company[]>([]); const [contracts, setContracts] = useState<Contract[]>([]); const [search, setSearch] = useState(""); const [error, setError] = useState<string | null>(null);
-  useEffect(() => { Promise.all([fetchClients(), fetchCompanies(), fetchContracts()]).then(([clientResult, companyResult, contractResult]) => { if (!clientResult.ok || !companyResult.ok || !contractResult.ok) setError("Não foi possível carregar os clientes locais."); else { setClients(clientResult.data); setCompanies(companyResult.data); setContracts(contractResult.data); } }); }, []);
-  const companiesById = useMemo(() => new Map(companies.map((company) => [company.id, company])), [companies]); const contractsByClient = useMemo(() => new Map(contracts.map((contract) => [contract.clientId, contract])), [contracts]); const visible = clients.filter((client) => (companiesById.get(client.companyId ?? "")?.name ?? "").toLowerCase().includes(search.toLowerCase()));
-  return <div className="space-y-6"><header><div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-lime"><Building2 className="h-4 w-4" /> Relacionamento</div><h1 className="mt-2 font-display text-3xl font-bold">{mod.label}</h1><p className="mt-2 text-sm text-muted-foreground">Visão consolidada dos clientes e contratos ativos.</p></header><div className="surface-card relative p-4"><Search className="pointer-events-none absolute left-7 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar cliente" className="pl-9" /></div>{error && <ApiUnavailableState message={error} />}{!error && visible.length === 0 && <EmptyState title="Nenhum cliente encontrado" description="Clientes convertidos aparecerão aqui." />}{visible.length > 0 && <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{visible.map((client) => { const company = companiesById.get(client.companyId ?? ""); const contract = contractsByClient.get(client.id); return <article key={client.id} className="surface-card p-5"><div className="flex items-start justify-between"><div><h2 className="font-display text-lg font-semibold">{company?.name ?? "Cliente sem empresa"}</h2><p className="mt-1 text-sm text-muted-foreground">{company?.city ?? "Local não informado"}</p></div><HeartPulse className={`h-5 w-5 ${client.status === "active" ? "text-lime" : "text-muted-foreground"}`} /></div><div className="mt-5 grid grid-cols-2 gap-3 text-sm"><div><div className="text-xs text-muted-foreground">Status</div><div className="mt-1 font-medium capitalize">{client.status}</div></div><div><div className="text-xs text-muted-foreground">MRR</div><div className="mt-1 font-medium">{contract ? Number(contract.monthlyValue).toLocaleString("pt-BR", { style: "currency", currency: contract.currency }) : "—"}</div></div></div></article>; })}</div>}</div>;
+  const [clients, setClients] = useState<Client[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [search, setSearch] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [companyId, setCompanyId] = useState("");
+  const [status, setStatus] = useState<Client["status"]>("onboarding");
+  const [startedAt, setStartedAt] = useState("");
+  const [notes, setNotes] = useState("");
+  const [ltvLoading, setLtvLoading] = useState<string | null>(null);
+  const [ltv, setLtv] = useState<
+    Record<
+      string,
+      { realizedRevenue: string; realizedCost: string; realizedLtv: number; monthsActive: number }
+    >
+  >({});
+
+  async function load() {
+    const [clientResult, companyResult, contractResult] = await Promise.all([
+      fetchClients(),
+      fetchCompanies(),
+      fetchContracts(),
+    ]);
+    if (!clientResult.ok || !companyResult.ok || !contractResult.ok) {
+      setError("Não foi possível carregar os clientes locais.");
+      return;
+    }
+    setError(null);
+    setClients(clientResult.data);
+    setCompanies(companyResult.data);
+    setContracts(contractResult.data);
+  }
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const companiesById = useMemo(
+    () => new Map(companies.map((company) => [company.id, company])),
+    [companies],
+  );
+  const contractsByClient = useMemo(
+    () => new Map(contracts.map((contract) => [contract.clientId, contract])),
+    [contracts],
+  );
+  const visible = clients.filter((client) =>
+    (companiesById.get(client.companyId ?? "")?.name ?? "")
+      .toLowerCase()
+      .includes(search.toLowerCase()),
+  );
+
+  async function handleCreate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!companyId) {
+      setFormError("Selecione uma empresa para criar o cliente.");
+      return;
+    }
+    setSaving(true);
+    setFormError(null);
+    const result = await createClient({
+      companyId,
+      status,
+      startedAt: toIsoDate(startedAt),
+      notes: notes.trim() || undefined,
+    });
+    if (!result.ok) setFormError(result.error.message);
+    else {
+      setShowForm(false);
+      setCompanyId("");
+      setNotes("");
+      setStartedAt("");
+      await load();
+    }
+    setSaving(false);
+  }
+
+  async function handleLtv(clientId: string) {
+    setLtvLoading(clientId);
+    const result = await fetchClientLtv(clientId);
+    if (result.ok) setLtv((current) => ({ ...current, [clientId]: result.data }));
+    setLtvLoading(null);
+  }
+
+  const money = (value: string | number) =>
+    Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  return (
+    <div className="space-y-6">
+      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-lime">
+            <Building2 className="h-4 w-4" /> Relacionamento
+          </div>
+          <h1 className="mt-2 font-display text-3xl font-bold">{mod.label}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Visão consolidada dos clientes, contratos e valor gerado.
+          </p>
+        </div>
+        <Button onClick={() => setShowForm((current) => !current)}>
+          <Plus /> Novo cliente
+        </Button>
+      </header>
+
+      {showForm && (
+        <form className="surface-card grid gap-4 p-5 md:grid-cols-2" onSubmit={handleCreate}>
+          <div className="md:col-span-2">
+            <div className="flex items-center gap-2 font-display text-lg font-semibold">
+              <Sparkles className="h-4 w-4 text-lime" /> Abrir relacionamento
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Converta uma empresa qualificada em cliente sem recadastrar seus dados.
+            </p>
+          </div>
+          <label className="space-y-2 text-sm font-medium">
+            Empresa
+            <select
+              className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+              value={companyId}
+              onChange={(event) => setCompanyId(event.target.value)}
+              required
+            >
+              <option value="">Selecione uma empresa</option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="space-y-2 text-sm font-medium">
+            Status
+            <select
+              className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+              value={status}
+              onChange={(event) => setStatus(event.target.value as Client["status"])}
+            >
+              {statuses.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="space-y-2 text-sm font-medium">
+            Data de início
+            <Input
+              className="mt-2"
+              type="date"
+              value={startedAt}
+              onChange={(event) => setStartedAt(event.target.value)}
+            />
+          </label>
+          <label className="space-y-2 text-sm font-medium">
+            Notas
+            <Textarea
+              className="mt-2"
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              placeholder="Contexto do relacionamento"
+            />
+          </label>
+          {formError && <p className="md:col-span-2 text-sm text-destructive">{formError}</p>}
+          <div className="flex gap-2 md:col-span-2">
+            <Button disabled={saving} type="submit">
+              {saving ? "Salvando…" : "Criar cliente"}
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>
+              Cancelar
+            </Button>
+          </div>
+        </form>
+      )}
+
+      <div className="surface-card relative p-4">
+        <Search className="pointer-events-none absolute left-7 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Buscar cliente"
+          className="pl-9"
+        />
+      </div>
+      {error && <ApiUnavailableState message={error} />}
+      {!error && visible.length === 0 && (
+        <EmptyState
+          title="Nenhum cliente encontrado"
+          description="Clientes convertidos aparecerão aqui."
+        />
+      )}
+      {visible.length > 0 && (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {visible.map((client) => {
+            const company = companiesById.get(client.companyId ?? "");
+            const contract = contractsByClient.get(client.id);
+            const clientLtv = ltv[client.id];
+            return (
+              <article
+                key={client.id}
+                className="surface-card p-5 transition-transform hover:-translate-y-0.5"
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h2 className="font-display text-lg font-semibold">
+                      {company?.name ?? "Cliente sem empresa"}
+                    </h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {company?.city ?? "Local não informado"}
+                    </p>
+                  </div>
+                  <HeartPulse
+                    className={`h-5 w-5 ${client.status === "active" ? "text-lime" : "text-muted-foreground"}`}
+                  />
+                </div>
+                <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Status</div>
+                    <div className="mt-1 font-medium capitalize">
+                      {client.status.replace("_", " ")}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">MRR</div>
+                    <div className="mt-1 font-medium">
+                      {contract ? money(contract.monthlyValue) : "—"}
+                    </div>
+                  </div>
+                </div>
+                {clientLtv && (
+                  <div className="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-lime/20 bg-lime/5 p-3 text-sm">
+                    <div>
+                      <div className="text-xs text-muted-foreground">LTV realizado</div>
+                      <strong className="mt-1 block text-lime">
+                        {money(clientLtv.realizedLtv)}
+                      </strong>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">Meses ativos</div>
+                      <strong className="mt-1 block">{clientLtv.monthsActive}</strong>
+                    </div>
+                  </div>
+                )}
+                <Button
+                  className="mt-4 w-full"
+                  size="sm"
+                  variant="outline"
+                  disabled={ltvLoading === client.id}
+                  onClick={() => void handleLtv(client.id)}
+                >
+                  {ltvLoading === client.id
+                    ? "Calculando…"
+                    : clientLtv
+                      ? "Atualizar LTV"
+                      : "Ver LTV"}
+                </Button>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
