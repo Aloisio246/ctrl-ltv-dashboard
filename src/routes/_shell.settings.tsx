@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Building2, Check, ExternalLink, KeyRound, Link2, Mail, Save, ShieldCheck, UserRound, X } from "lucide-react";
+import { Building2, Check, CreditCard, ExternalLink, KeyRound, Link2, Mail, Save, ShieldCheck, UserRound, X } from "lucide-react";
 import { getModule } from "@/lib/modules";
 import {
   fetchIntegrations,
@@ -114,6 +114,19 @@ const integrationDefinitions: Array<{
     note: "O envio comercial continuará sujeito às preferências e políticas de comunicação.",
     docsUrl: "https://resend.com/api-keys",
   },
+  {
+    provider: "asaas",
+    title: "Asaas · Cobranças",
+    description: "Prepare a geração de cobranças, links de pagamento e confirmação de recebimentos.",
+    icon: CreditCard,
+    fields: [
+      { key: "apiKey", label: "API Key do Asaas", placeholder: "$aact_…" },
+      { key: "webhookToken", label: "Token de autenticação do webhook", placeholder: "Token definido no Asaas" },
+      { key: "environment", label: "Ambiente", placeholder: "sandbox ou production" },
+    ],
+    note: "Começaremos pelo Sandbox. A API Key fica criptografada no backend e nunca é exibida novamente.",
+    docsUrl: "https://docs.asaas.com/docs/sandbox",
+  },
 ];
 
 function SettingsPage() {
@@ -221,8 +234,8 @@ function IntegrationCard({
     const result = await saveIntegration({
       provider: definition.provider,
       label: definition.title,
-      config: definition.provider === "email" ? { fromAddress: values.fromAddress ?? "" } : definition.provider === "rapidapi" ? { host: values.host ?? "", endpoint: values.endpoint ?? "" } : definition.provider === "apify" ? { actorId: values.actorId ?? "" } : {},
-      secrets: Object.fromEntries(Object.entries(values).filter(([key]) => !["host", "endpoint", "actorId", "fromAddress"].includes(key))),
+      config: definition.provider === "email" ? { fromAddress: values.fromAddress ?? "" } : definition.provider === "rapidapi" ? { host: values.host ?? "", endpoint: values.endpoint ?? "" } : definition.provider === "apify" ? { actorId: values.actorId ?? "" } : definition.provider === "asaas" ? { environment: values.environment ?? "sandbox" } : {},
+      secrets: Object.fromEntries(Object.entries(values).filter(([key]) => !["host", "endpoint", "actorId", "fromAddress", "environment"].includes(key))),
     });
     if (result.ok) {
       onSaved(result.data);
