@@ -95,6 +95,8 @@ export type HealthScore = { id: string; clientId: string; score: number; status:
 export type MetricsSummary = DashboardSummary["metrics"];
 export type Conversation = { id: string; externalId: string; status: "open" | "pending" | "closed"; subject: string | null; lastMessageAt: string | null; channel: string; channelLabel: string | null; unreadCount: number; lastMessage: { body: string; direction: string; createdAt: string } | null };
 export type ApprovalBatch = { id: string; title: string; channel: string; status: string; notificationStatus: string; createdAt: string; updatedAt: string };
+export type ApprovalItem = { id: string; messageId: string; channel: string; scheduledAt: string | null; status: string; body: string; version: number; recipientExternalId: string | null; channelLabel: string | null; jobStatus: string | null; jobLastError: string | null };
+export type ApprovalBatchDetail = ApprovalBatch & { items: ApprovalItem[] };
 export type Me = { user: { id: string; email: string; displayName: string }; activeMembership: { organizationId: string; organizationName: string; role: string }; memberships: Array<{ organizationId: string; organizationName: string; role: string }> };
 
 export class ApiUnavailableError extends Error {
@@ -209,7 +211,13 @@ export async function createProspect(input: {
   });
 }
 
+export async function createActivity(input: { prospectId: string; type: Activity["type"]; title: string; notes?: string; dueAt?: string }) {
+  return apiFetch<Activity>("/v1/activities", { method: "POST", body: JSON.stringify(input) });
+}
+
 export async function fetchOpportunities() { return apiFetch<Opportunity[]>("/v1/opportunities?limit=100&offset=0"); }
+export async function createOpportunity(input: { prospectId: string; stage?: Opportunity["stage"]; amount?: number; currency?: string }) { return apiFetch<Opportunity>("/v1/opportunities", { method: "POST", body: JSON.stringify(input) }); }
+export async function updateOpportunityStage(id: string, stage: Opportunity["stage"], lostReason?: string) { return apiFetch<Opportunity>(`/v1/opportunities/${id}`, { method: "PATCH", body: JSON.stringify({ stage, lostReason }) }); }
 export async function fetchClients() { return apiFetch<Client[]>("/v1/clients?limit=100&offset=0"); }
 export async function fetchContracts() { return apiFetch<Contract[]>("/v1/contracts?limit=100&offset=0"); }
 export async function fetchInvoices() { return apiFetch<Invoice[]>("/v1/invoices?limit=100&offset=0"); }
@@ -218,4 +226,7 @@ export async function fetchMetricsSummary() { return apiFetch<MetricsSummary>("/
 export async function fetchClientLtv(id: string) { return apiFetch<{ clientId: string; realizedRevenue: string; realizedCost: string; mrr: string; monthsActive: number; realizedLtv: number }>(`/v1/metrics/clients/${id}/ltv`); }
 export async function fetchConversations() { return apiFetch<Conversation[]>("/v1/inbox/conversations?limit=100&offset=0"); }
 export async function fetchApprovalBatches() { return apiFetch<ApprovalBatch[]>("/v1/approval-batches?limit=100&offset=0"); }
+export async function fetchApprovalBatch(id: string) { return apiFetch<ApprovalBatchDetail>(`/v1/approval-batches/${id}`); }
+export async function decideApprovalItem(id: string, status: "approved" | "rejected") { return apiFetch<{ id: string; batchId: string; messageId: string; status: string }>(`/v1/approval-batches/items/${id}/decision`, { method: "POST", body: JSON.stringify({ status }) }); }
+export async function cancelApprovalBatch(id: string) { return apiFetch<{ id: string; status: string }>(`/v1/approval-batches/${id}/cancel`, { method: "POST" }); }
 export async function fetchMe() { return apiFetch<Me>("/v1/me"); }
