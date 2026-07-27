@@ -43,6 +43,12 @@ export type CaptureRun = {
   startedAt: string | null;
   completedAt: string | null;
   createdAt: string;
+  metadata?: Record<string, unknown>;
+  provider?: string;
+  limitRequested?: number;
+  forceRefresh?: boolean;
+  whatsappCheckEnabled?: boolean;
+  cacheHit?: boolean;
 };
 export type CaptureRecord = {
   id: string;
@@ -52,6 +58,9 @@ export type CaptureRecord = {
   normalizedName: string;
   website: string | null;
   phone: string | null;
+  email?: string | null;
+  normalizedPhone?: string | null;
+  normalizedDomain?: string | null;
   city: string | null;
   state: string | null;
   country: string;
@@ -59,6 +68,14 @@ export type CaptureRecord = {
   status: "pending" | "approved" | "rejected" | "promoted";
   companyId: string | null;
   createdAt: string;
+  rating?: number | null;
+  reviewCount?: number | null;
+  websiteAudit?: Record<string, unknown>;
+  enrichment?: Record<string, unknown>;
+  qualityScore?: number;
+  scoreReasons?: string[];
+  enrichmentStatus?: string;
+  whatsappStatus?: string;
 };
 export type Company = {
   id: string;
@@ -187,6 +204,17 @@ export type Me = {
   activeMembership: { organizationId: string; organizationName: string; role: string };
   memberships: Array<{ organizationId: string; organizationName: string; role: string }>;
 };
+export type IntegrationProvider = "google_places" | "serper" | "rapidapi" | "apify" | "whatsapp_cloud" | "instagram" | "email";
+export type Integration = {
+  id: string;
+  provider: IntegrationProvider;
+  label: string;
+  status: "configured" | "not_configured" | "error" | "disabled";
+  config: Record<string, unknown>;
+  hasCredentials: boolean;
+  lastError: string | null;
+  updatedAt: string;
+};
 
 export class ApiUnavailableError extends Error {
   constructor(message = "API indisponível") {
@@ -209,7 +237,7 @@ async function loginFromLocalEnv() {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
-  if (!response.ok) throw new Error("Falha ao autenticar no backend local");
+  if (!response.ok) throw new Error("Falha ao autenticar");
   const payload = (await response.json()) as {
     data: { accessToken: string; refreshToken: string };
   };
@@ -257,16 +285,64 @@ export async function fetchActivities() {
 export async function fetchCaptureRuns() {
   return apiFetch<CaptureRun[]>("/v1/capture/runs?limit=50&offset=0");
 }
+
+export async function fetchCaptureRunLogs(runId: string) {
+  return apiFetch<Array<{ id: string; level: string; event: string; message: string; metadata: Record<string, unknown>; createdAt: string }>>(
+    `/v1/capture/runs/${runId}/logs`,
+  );
+}
 export async function fetchCaptureRecords(status?: CaptureRecord["status"]) {
   return apiFetch<CaptureRecord[]>(
     `/v1/capture/records?limit=100&offset=0${status ? `&status=${status}` : ""}`,
   );
 }
-export async function createCaptureRun(input: { source: string; query?: string }) {
+export async function createCaptureRun(input: {
+  source: string;
+  query?: string;
+  niche?: string;
+  city?: string;
+  region?: string;
+  limit?: number;
+  forceRefresh?: boolean;
+  verifyWhatsAppExists?: boolean;
+  extractEmailsAndContacts?: boolean;
+}) {
   return apiFetch<CaptureRun>("/v1/capture/runs", {
     method: "POST",
-    body: JSON.stringify({ ...input, metadata: { mode: "local-beta" } }),
+    body: JSON.stringify({
+      ...input,
+      provider: input.source,
+      metadata: {
+        mode: "local-beta",
+        niche: input.niche,
+        city: input.city,
+        region: input.region,
+        verifyWhatsAppExists: input.verifyWhatsAppExists,
+        extractEmailsAndContacts: input.extractEmailsAndContacts,
+      },
+    }),
   });
+}
+
+export async function importCaptureRecords(input: {
+  source: "csv" | "manual";
+  records: Array<{
+    name: string;
+    website?: string;
+    phone?: string;
+    email?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    sourceUrl?: string;
+    rating?: number;
+    reviewCount?: number;
+  }>;
+}) {
+  return apiFetch<{ run: CaptureRun; summary: { acceptedCount: number; duplicateCount: number; errorCount: number } }>(
+    "/v1/capture/import",
+    { method: "POST", body: JSON.stringify(input) },
+  );
 }
 export async function reviewCaptureRecord(id: string, status: "approved" | "rejected") {
   return apiFetch<CaptureRecord>(`/v1/capture/records/${id}/review`, {
@@ -425,6 +501,26 @@ export async function fetchMe() {
   return apiFetch<Me>("/v1/me");
 }
 
+export async function fetchIntegrations() {
+  return apiFetch<Integration[]>("/v1/integrations");
+}
+
+export async function saveIntegration(input: {
+  provider: IntegrationProvider;
+  label: string;
+  config?: Record<string, unknown>;
+  secrets?: Record<string, string>;
+}) {
+  return apiFetch<Integration>(`/v1/integrations/${input.provider}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function removeIntegration(provider: IntegrationProvider) {
+  return apiFetch<void>(`/v1/integrations/${provider}`, { method: "DELETE" });
+}
+
 export async function login(email: string, password: string) {
   if (!API_BASE_URL || typeof window === "undefined")
     return { ok: false as const, error: new ApiUnavailableError("Backend não conectado") };
@@ -447,6 +543,47 @@ export async function login(email: string, password: string) {
       ok: false as const,
       error: new ApiUnavailableError(
         error instanceof Error ? error.message : "Não foi possível entrar",
+      ),
+    };
+  }
+}
+
+export async function bootstrap(input: {
+  email: string;
+  displayName: string;
+  password: string;
+  organizationName: string;
+  organizationSlug: string;
+}) {
+  if (!API_BASE_URL || typeof window === "undefined")
+    return { ok: false as const, error: new ApiUnavailableError("Backend não conectado") };
+  try {
+    const response = await fetch(`${API_BASE_URL}/v1/auth/bootstrap`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      const message =
+        payload?.error === "validation_error"
+          ? "Confira os dados informados."
+          : response.status === 409
+            ? "Este e-mail ou identificador de workspace já está em uso."
+            : "Não foi possível criar o workspace.";
+      return { ok: false as const, error: new ApiUnavailableError(message) };
+    }
+    const payload = (await response.json()) as {
+      data: { accessToken: string; refreshToken: string };
+    };
+    window.localStorage.setItem(TOKEN_KEY, payload.data.accessToken);
+    window.localStorage.setItem(REFRESH_KEY, payload.data.refreshToken);
+    return { ok: true as const, data: payload.data };
+  } catch (error) {
+    return {
+      ok: false as const,
+      error: new ApiUnavailableError(
+        error instanceof Error ? error.message : "Não foi possível criar o workspace",
       ),
     };
   }

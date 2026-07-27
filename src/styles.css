@@ -69,6 +69,7 @@
 :root,
 .dark {
   --radius: 0.75rem;
+  color-scheme: dark;
 
   /* Graphite base */
   --background: oklch(0.16 0.012 250);
@@ -136,6 +137,25 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+  select {
+    color: var(--foreground);
+    background-color: var(--surface);
+    color-scheme: dark;
+  }
+  select option,
+  select optgroup {
+    color: var(--foreground);
+    background-color: var(--surface-2);
+  }
+  select option:checked,
+  select option:hover {
+    color: var(--accent-foreground);
+    background-color: var(--accent);
+  }
+  select option:disabled {
+    color: var(--muted-foreground);
+    background-color: var(--surface);
   }
   body {
     background-image:

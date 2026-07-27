@@ -118,7 +118,7 @@ export const MODULES: ModuleDef[] = [
     description: "Organização, usuários, canais, integrações e políticas.",
     to: "/settings",
     icon: Settings,
-    phase: "planned",
+    phase: "live",
   },
 ];
 
