@@ -1,13 +1,18 @@
-import { Bell, Search, Activity } from "lucide-react";
+import { Bell, Search, Activity, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import { motion as m } from "@/lib/motion";
 import { useCommandCenter } from "@/components/command-center";
 import { MobileNav } from "@/components/shell/mobile-nav";
+import { logout } from "@/lib/api-client";
 
 export function Topbar() {
   const { open } = useCommandCenter();
-  const isMac =
-    typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
+  const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
+
+  async function handleLogout() {
+    await logout();
+    window.location.assign("/dashboard");
+  }
 
   return (
     <motion.header
@@ -56,6 +61,15 @@ export function Topbar() {
           <div className="text-[10px] text-muted-foreground">Ctrl LTV</div>
         </div>
       </div>
+
+      <button
+        aria-label="Sair da conta"
+        onClick={handleLogout}
+        className="grid h-10 w-10 place-items-center rounded-lg border border-border/60 bg-surface/60 text-muted-foreground transition-colors hover:border-lime/40 hover:text-foreground"
+        title="Sair"
+      >
+        <LogOut className="h-4 w-4" />
+      </button>
     </motion.header>
   );
 }
