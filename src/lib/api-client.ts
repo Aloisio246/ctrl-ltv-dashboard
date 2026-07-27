@@ -209,7 +209,13 @@ export async function createProspect(input: {
   });
 }
 
+export async function createActivity(input: { prospectId: string; type: Activity["type"]; title: string; notes?: string; dueAt?: string }) {
+  return apiFetch<Activity>("/v1/activities", { method: "POST", body: JSON.stringify(input) });
+}
+
 export async function fetchOpportunities() { return apiFetch<Opportunity[]>("/v1/opportunities?limit=100&offset=0"); }
+export async function createOpportunity(input: { prospectId: string; stage?: Opportunity["stage"]; amount?: number; currency?: string }) { return apiFetch<Opportunity>("/v1/opportunities", { method: "POST", body: JSON.stringify(input) }); }
+export async function updateOpportunityStage(id: string, stage: Opportunity["stage"], lostReason?: string) { return apiFetch<Opportunity>(`/v1/opportunities/${id}`, { method: "PATCH", body: JSON.stringify({ stage, lostReason }) }); }
 export async function fetchClients() { return apiFetch<Client[]>("/v1/clients?limit=100&offset=0"); }
 export async function fetchContracts() { return apiFetch<Contract[]>("/v1/contracts?limit=100&offset=0"); }
 export async function fetchInvoices() { return apiFetch<Invoice[]>("/v1/invoices?limit=100&offset=0"); }
