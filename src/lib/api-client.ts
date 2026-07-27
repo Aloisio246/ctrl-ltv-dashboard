@@ -18,7 +18,6 @@ export type DashboardSummary = {
   inbox: { unreadMessages: number };
   approvals: { pendingItems: number };
 };
-
 export type Activity = {
   id: string;
   prospectId: string | null;
@@ -32,7 +31,6 @@ export type Activity = {
   completedAt: string | null;
   createdAt: string;
 };
-
 export type CaptureRun = {
   id: string;
   source: string;
@@ -46,7 +44,6 @@ export type CaptureRun = {
   completedAt: string | null;
   createdAt: string;
 };
-
 export type CaptureRecord = {
   id: string;
   runId: string;
@@ -63,7 +60,6 @@ export type CaptureRecord = {
   companyId: string | null;
   createdAt: string;
 };
-
 export type Company = {
   id: string;
   name: string;
@@ -74,7 +70,6 @@ export type Company = {
   country: string;
   source: string;
 };
-
 export type Prospect = {
   id: string;
   companyId: string;
@@ -86,7 +81,6 @@ export type Prospect = {
   nextFollowUpAt: string | null;
   createdAt: string;
 };
-
 export type Opportunity = {
   id: string;
   prospectId: string;
@@ -174,6 +168,20 @@ export type ApprovalBatch = {
   createdAt: string;
   updatedAt: string;
 };
+export type ApprovalItem = {
+  id: string;
+  messageId: string;
+  channel: string;
+  scheduledAt: string | null;
+  status: string;
+  body: string;
+  version: number;
+  recipientExternalId: string | null;
+  channelLabel: string | null;
+  jobStatus: string | null;
+  jobLastError: string | null;
+};
+export type ApprovalBatchDetail = ApprovalBatch & { items: ApprovalItem[] };
 export type Me = {
   user: { id: string; email: string; displayName: string };
   activeMembership: { organizationId: string; organizationName: string; role: string };
@@ -186,7 +194,6 @@ export class ApiUnavailableError extends Error {
     this.name = "ApiUnavailableError";
   }
 }
-
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ApiUnavailableError };
 
 function getStoredToken() {
@@ -212,9 +219,8 @@ async function loginFromLocalEnv() {
 }
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<ApiResult<T>> {
-  if (!API_BASE_URL || typeof window === "undefined") {
+  if (!API_BASE_URL || typeof window === "undefined")
     return { ok: false, error: new ApiUnavailableError("Backend não conectado") };
-  }
   try {
     let token = getStoredToken() ?? (await loginFromLocalEnv());
     const request = () =>
@@ -245,51 +251,41 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 export async function fetchDashboardSummary() {
   return apiFetch<DashboardSummary>("/v1/dashboard/summary");
 }
-
 export async function fetchActivities() {
   return apiFetch<Activity[]>("/v1/activities?limit=50&offset=0");
 }
-
 export async function fetchCaptureRuns() {
   return apiFetch<CaptureRun[]>("/v1/capture/runs?limit=50&offset=0");
 }
-
 export async function fetchCaptureRecords(status?: CaptureRecord["status"]) {
-  const query = status ? `&status=${status}` : "";
-  return apiFetch<CaptureRecord[]>(`/v1/capture/records?limit=100&offset=0${query}`);
+  return apiFetch<CaptureRecord[]>(
+    `/v1/capture/records?limit=100&offset=0${status ? `&status=${status}` : ""}`,
+  );
 }
-
 export async function createCaptureRun(input: { source: string; query?: string }) {
   return apiFetch<CaptureRun>("/v1/capture/runs", {
     method: "POST",
     body: JSON.stringify({ ...input, metadata: { mode: "local-beta" } }),
   });
 }
-
 export async function reviewCaptureRecord(id: string, status: "approved" | "rejected") {
   return apiFetch<CaptureRecord>(`/v1/capture/records/${id}/review`, {
     method: "POST",
     body: JSON.stringify({ status }),
   });
 }
-
 export async function promoteCaptureRecord(id: string) {
   return apiFetch<{ record: CaptureRecord; company: Company; prospect: Prospect }>(
     `/v1/capture/records/${id}/promote`,
-    {
-      method: "POST",
-    },
+    { method: "POST" },
   );
 }
-
 export async function fetchCompanies() {
   return apiFetch<Company[]>("/v1/companies");
 }
-
 export async function fetchProspects() {
   return apiFetch<Prospect[]>("/v1/prospects");
 }
-
 export async function createProspect(input: {
   companyId: string;
   status: Prospect["status"];
@@ -297,14 +293,40 @@ export async function createProspect(input: {
   score: number;
   nextFollowUpAt?: string;
 }) {
-  return apiFetch<Prospect>("/v1/prospects", {
+  return apiFetch<Prospect>("/v1/prospects", { method: "POST", body: JSON.stringify(input) });
+}
+export async function createActivity(input: {
+  prospectId: string;
+  type: Activity["type"];
+  title: string;
+  notes?: string;
+  dueAt?: string;
+}) {
+  return apiFetch<Activity>("/v1/activities", { method: "POST", body: JSON.stringify(input) });
+}
+export async function fetchOpportunities() {
+  return apiFetch<Opportunity[]>("/v1/opportunities?limit=100&offset=0");
+}
+export async function createOpportunity(input: {
+  prospectId: string;
+  stage?: Opportunity["stage"];
+  amount?: number;
+  currency?: string;
+}) {
+  return apiFetch<Opportunity>("/v1/opportunities", {
     method: "POST",
     body: JSON.stringify(input),
   });
 }
-
-export async function fetchOpportunities() {
-  return apiFetch<Opportunity[]>("/v1/opportunities?limit=100&offset=0");
+export async function updateOpportunityStage(
+  id: string,
+  stage: Opportunity["stage"],
+  lostReason?: string,
+) {
+  return apiFetch<Opportunity>(`/v1/opportunities/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ stage, lostReason }),
+  });
 }
 export async function fetchClients() {
   return apiFetch<Client[]>("/v1/clients?limit=100&offset=0");
@@ -385,6 +407,20 @@ export async function fetchConversations() {
 export async function fetchApprovalBatches() {
   return apiFetch<ApprovalBatch[]>("/v1/approval-batches?limit=100&offset=0");
 }
+export async function fetchApprovalBatch(id: string) {
+  return apiFetch<ApprovalBatchDetail>(`/v1/approval-batches/${id}`);
+}
+export async function decideApprovalItem(id: string, status: "approved" | "rejected") {
+  return apiFetch<{ id: string; batchId: string; messageId: string; status: string }>(
+    `/v1/approval-batches/items/${id}/decision`,
+    { method: "POST", body: JSON.stringify({ status }) },
+  );
+}
+export async function cancelApprovalBatch(id: string) {
+  return apiFetch<{ id: string; status: string }>(`/v1/approval-batches/${id}/cancel`, {
+    method: "POST",
+  });
+}
 export async function fetchMe() {
   return apiFetch<Me>("/v1/me");
 }
@@ -420,7 +456,7 @@ export async function logout() {
   const refreshToken =
     typeof window === "undefined" ? null : window.localStorage.getItem(REFRESH_KEY);
   try {
-    if (refreshToken && API_BASE_URL) {
+    if (refreshToken && API_BASE_URL)
       await fetch(`${API_BASE_URL}/v1/auth/logout`, {
         method: "POST",
         headers: {
@@ -429,7 +465,6 @@ export async function logout() {
         },
         body: JSON.stringify({ refreshToken }),
       });
-    }
   } finally {
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(TOKEN_KEY);
