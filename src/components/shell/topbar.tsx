@@ -1,4 +1,4 @@
-import { Bell, Search, Activity, LogOut } from "lucide-react";
+import { Bell, Search, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import { motion as m } from "@/lib/motion";
 import { useCommandCenter } from "@/components/command-center";
@@ -34,15 +34,6 @@ export function Topbar() {
           {isMac ? "⌘" : "Ctrl"} K
         </kbd>
       </button>
-
-      <div className="hidden items-center gap-2 rounded-lg border border-border/60 bg-surface/60 px-3 py-2 text-xs text-muted-foreground lg:flex">
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inset-0 animate-ping rounded-full bg-lime/60" />
-          <span className="relative h-2 w-2 rounded-full bg-lime" />
-        </span>
-        <Activity className="h-3.5 w-3.5" />
-        <span>2 jobs em execução</span>
-      </div>
 
       <button
         aria-label="Notificações"

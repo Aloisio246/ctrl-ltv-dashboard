@@ -18,6 +18,7 @@ import {
 } from "@/lib/api-client";
 import { ApiUnavailableState, EmptyState } from "@/components/states";
 import { Button } from "@/components/ui/button";
+import { AppSelect } from "@/components/ui/app-select";
 import { Input } from "@/components/ui/input";
 
 const mod = getModule("finance")!;
@@ -212,19 +213,18 @@ function FinancePage() {
               </div>
               <label className="space-y-2 text-sm font-medium">
                 Cliente
-                <select
-                  className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+                <AppSelect
+                  ariaLabel="Cliente do contrato"
+                  className="mt-2"
                   value={selectedClient}
-                  onChange={(event) => setSelectedClient(event.target.value)}
+                  onValueChange={setSelectedClient}
+                  placeholder="Selecione um cliente"
+                  options={clients.map((client) => ({
+                    value: client.id,
+                    label: `${client.id.slice(0, 8)} · ${client.status}`,
+                  }))}
                   required
-                >
-                  <option value="">Selecione um cliente</option>
-                  {clients.map((client) => (
-                    <option key={client.id} value={client.id}>
-                      {client.id.slice(0, 8)} · {client.status}
-                    </option>
-                  ))}
-                </select>
+                />
               </label>
               <label className="space-y-2 text-sm font-medium">
                 Mensalidade
@@ -278,36 +278,34 @@ function FinancePage() {
               </div>
               <label className="space-y-2 text-sm font-medium">
                 Cliente
-                <select
-                  className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+                <AppSelect
+                  ariaLabel="Cliente da cobrança"
+                  className="mt-2"
                   value={invoiceClient}
-                  onChange={(event) => setInvoiceClient(event.target.value)}
+                  onValueChange={setInvoiceClient}
+                  placeholder="Selecione um cliente"
+                  options={clients.map((client) => ({
+                    value: client.id,
+                    label: `${client.id.slice(0, 8)} · ${client.status}`,
+                  }))}
                   required
-                >
-                  <option value="">Selecione um cliente</option>
-                  {clients.map((client) => (
-                    <option key={client.id} value={client.id}>
-                      {client.id.slice(0, 8)} · {client.status}
-                    </option>
-                  ))}
-                </select>
+                />
               </label>
               <label className="space-y-2 text-sm font-medium">
                 Contrato (opcional)
-                <select
-                  className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+                <AppSelect
+                  ariaLabel="Contrato da cobrança"
+                  className="mt-2"
                   value={invoiceContract}
-                  onChange={(event) => setInvoiceContract(event.target.value)}
-                >
-                  <option value="">Sem contrato</option>
-                  {contracts
+                  onValueChange={setInvoiceContract}
+                  placeholder="Sem contrato"
+                  options={contracts
                     .filter((contract) => !invoiceClient || contract.clientId === invoiceClient)
-                    .map((contract) => (
-                      <option key={contract.id} value={contract.id}>
-                        {money(contract.monthlyValue)} / mês
-                      </option>
-                    ))}
-                </select>
+                    .map((contract) => ({
+                      value: contract.id,
+                      label: `${money(contract.monthlyValue)} / mês`,
+                    }))}
+                />
               </label>
               <label className="space-y-2 text-sm font-medium">
                 Número
@@ -361,18 +359,17 @@ function FinancePage() {
               </div>
               <label className="space-y-2 text-sm font-medium">
                 Cliente (opcional)
-                <select
-                  className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+                <AppSelect
+                  ariaLabel="Cliente do custo"
+                  className="mt-2"
                   value={costClient}
-                  onChange={(event) => setCostClient(event.target.value)}
-                >
-                  <option value="">Custo geral da operação</option>
-                  {clients.map((client) => (
-                    <option key={client.id} value={client.id}>
-                      {client.id.slice(0, 8)}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={setCostClient}
+                  placeholder="Custo geral da operação"
+                  options={clients.map((client) => ({
+                    value: client.id,
+                    label: client.id.slice(0, 8),
+                  }))}
+                />
               </label>
               <label className="space-y-2 text-sm font-medium">
                 Categoria

@@ -14,6 +14,7 @@ import {
 } from "@/lib/api-client";
 import { ApiUnavailableState, EmptyState } from "@/components/states";
 import { Button } from "@/components/ui/button";
+import { AppSelect } from "@/components/ui/app-select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -155,33 +156,25 @@ function ClientsPage() {
           </div>
           <label className="space-y-2 text-sm font-medium">
             Empresa
-            <select
-              className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+            <AppSelect
+              ariaLabel="Empresa do cliente"
+              className="mt-2"
               value={companyId}
-              onChange={(event) => setCompanyId(event.target.value)}
+              onValueChange={setCompanyId}
+              placeholder="Selecione uma empresa"
+              options={companies.map((company) => ({ value: company.id, label: company.name }))}
               required
-            >
-              <option value="">Selecione uma empresa</option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.name}
-                </option>
-              ))}
-            </select>
+            />
           </label>
           <label className="space-y-2 text-sm font-medium">
             Status
-            <select
-              className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+            <AppSelect
+              ariaLabel="Status do cliente"
+              className="mt-2"
               value={status}
-              onChange={(event) => setStatus(event.target.value as Client["status"])}
-            >
-              {statuses.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
+              onValueChange={(value) => setStatus(value as Client["status"])}
+              options={statuses}
+            />
           </label>
           <label className="space-y-2 text-sm font-medium">
             Data de início
