@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Building2, HeartPulse, Plus, Search, Sparkles } from "lucide-react";
 import { getModule } from "@/lib/modules";
@@ -165,6 +165,12 @@ function ClientsPage() {
               options={companies.map((company) => ({ value: company.id, label: company.name }))}
               required
             />
+            <div className="mt-2 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+              <span>{companies.length ? "A empresa vem da sua base de Contatos." : "Ainda não há empresas cadastradas."}</span>
+              <Link to="/contacts" className="shrink-0 text-lime hover:underline">
+                Cadastrar em Contatos
+              </Link>
+            </div>
           </label>
           <label className="space-y-2 text-sm font-medium">
             Status

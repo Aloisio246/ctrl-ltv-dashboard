@@ -15,6 +15,7 @@ import { Route as ShellActivitiesRouteImport } from './routes/_shell.activities'
 import { Route as ShellApprovalsRouteImport } from './routes/_shell.approvals'
 import { Route as ShellCaptureRouteImport } from './routes/_shell.capture'
 import { Route as ShellClientsRouteImport } from './routes/_shell.clients'
+import { Route as ShellContactsRouteImport } from './routes/_shell.contacts'
 import { Route as ShellDashboardRouteImport } from './routes/_shell.dashboard'
 import { Route as ShellFinanceRouteImport } from './routes/_shell.finance'
 import { Route as ShellInboxRouteImport } from './routes/_shell.inbox'
@@ -51,6 +52,11 @@ const ShellCaptureRoute = ShellCaptureRouteImport.update({
 const ShellClientsRoute = ShellClientsRouteImport.update({
   id: '/clients',
   path: '/clients',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellContactsRoute = ShellContactsRouteImport.update({
+  id: '/contacts',
+  path: '/contacts',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellDashboardRoute = ShellDashboardRouteImport.update({
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/approvals': typeof ShellApprovalsRoute
   '/capture': typeof ShellCaptureRoute
   '/clients': typeof ShellClientsRoute
+  '/contacts': typeof ShellContactsRoute
   '/dashboard': typeof ShellDashboardRoute
   '/finance': typeof ShellFinanceRoute
   '/inbox': typeof ShellInboxRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/approvals': typeof ShellApprovalsRoute
   '/capture': typeof ShellCaptureRoute
   '/clients': typeof ShellClientsRoute
+  '/contacts': typeof ShellContactsRoute
   '/dashboard': typeof ShellDashboardRoute
   '/finance': typeof ShellFinanceRoute
   '/inbox': typeof ShellInboxRoute
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   '/_shell/approvals': typeof ShellApprovalsRoute
   '/_shell/capture': typeof ShellCaptureRoute
   '/_shell/clients': typeof ShellClientsRoute
+  '/_shell/contacts': typeof ShellContactsRoute
   '/_shell/dashboard': typeof ShellDashboardRoute
   '/_shell/finance': typeof ShellFinanceRoute
   '/_shell/inbox': typeof ShellInboxRoute
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
     | '/approvals'
     | '/capture'
     | '/clients'
+    | '/contacts'
     | '/dashboard'
     | '/finance'
     | '/inbox'
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
     | '/approvals'
     | '/capture'
     | '/clients'
+    | '/contacts'
     | '/dashboard'
     | '/finance'
     | '/inbox'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/_shell/approvals'
     | '/_shell/capture'
     | '/_shell/clients'
+    | '/_shell/contacts'
     | '/_shell/dashboard'
     | '/_shell/finance'
     | '/_shell/inbox'
@@ -237,6 +249,13 @@ declare module '@tanstack/react-router' {
       path: '/clients'
       fullPath: '/clients'
       preLoaderRoute: typeof ShellClientsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/contacts': {
+      id: '/_shell/contacts'
+      path: '/contacts'
+      fullPath: '/contacts'
+      preLoaderRoute: typeof ShellContactsRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/dashboard': {
@@ -303,6 +322,7 @@ interface ShellRouteChildren {
   ShellApprovalsRoute: typeof ShellApprovalsRoute
   ShellCaptureRoute: typeof ShellCaptureRoute
   ShellClientsRoute: typeof ShellClientsRoute
+  ShellContactsRoute: typeof ShellContactsRoute
   ShellDashboardRoute: typeof ShellDashboardRoute
   ShellFinanceRoute: typeof ShellFinanceRoute
   ShellInboxRoute: typeof ShellInboxRoute
@@ -318,6 +338,7 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellApprovalsRoute: ShellApprovalsRoute,
   ShellCaptureRoute: ShellCaptureRoute,
   ShellClientsRoute: ShellClientsRoute,
+  ShellContactsRoute: ShellContactsRoute,
   ShellDashboardRoute: ShellDashboardRoute,
   ShellFinanceRoute: ShellFinanceRoute,
   ShellInboxRoute: ShellInboxRoute,

@@ -87,6 +87,24 @@ export type Company = {
   country: string;
   source: string;
 };
+export type Contact = {
+  id: string;
+  companyId: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  roleTitle: string | null;
+  createdAt: string;
+  companyName: string;
+  companyWebsite: string | null;
+  companyPhone: string | null;
+  companyCity: string | null;
+  companyState: string | null;
+  companyCountry: string;
+  companySource: string;
+  clientId: string | null;
+  clientStatus: string | null;
+};
 export type Prospect = {
   id: string;
   companyId: string;
@@ -123,6 +141,7 @@ export type Contract = {
   status: string;
   startedAt: string;
   endedAt: string | null;
+  billingDay: number | null;
   monthlyValue: string | number;
   setupFee: string | number;
   currency: string;
@@ -138,6 +157,34 @@ export type Invoice = {
   dueDate: string;
   subtotal: string | number;
   currency: string;
+  paymentProvider?: string | null;
+  providerPaymentId?: string | null;
+  paymentUrl?: string | null;
+};
+export type BillingReminderSettings = {
+  id: string | null;
+  enabled: boolean;
+  channel: "whatsapp" | "email";
+  daysBeforeDue: number;
+  sendHour: number;
+  timezone: string;
+  paymentProvider: "manual" | "asaas";
+  template: string;
+  updatedAt?: string;
+};
+export type BillingReminderDelivery = {
+  id: string;
+  contractId: string;
+  clientId: string;
+  channel: string;
+  dueDate: string;
+  status: string;
+  paymentUrl: string | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  outboundJobId: string | null;
+  sentAt: string | null;
+  createdAt: string;
 };
 export type Payment = {
   id: string;
@@ -204,7 +251,7 @@ export type Me = {
   activeMembership: { organizationId: string; organizationName: string; role: string };
   memberships: Array<{ organizationId: string; organizationName: string; role: string }>;
 };
-export type IntegrationProvider = "google_places" | "serper" | "rapidapi" | "apify" | "whatsapp_cloud" | "instagram" | "email";
+export type IntegrationProvider = "google_places" | "serper" | "rapidapi" | "apify" | "whatsapp_cloud" | "instagram" | "email" | "asaas";
 export type Integration = {
   id: string;
   provider: IntegrationProvider;
@@ -359,6 +406,30 @@ export async function promoteCaptureRecord(id: string) {
 export async function fetchCompanies() {
   return apiFetch<Company[]>("/v1/companies");
 }
+export async function createCompany(input: {
+  name: string;
+  normalizedName: string;
+  website?: string;
+  phone?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  source?: string;
+}) {
+  return apiFetch<Company>("/v1/companies", { method: "POST", body: JSON.stringify(input) });
+}
+export async function fetchContacts() {
+  return apiFetch<Contact[]>("/v1/contacts");
+}
+export async function createContact(input: {
+  companyId: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  roleTitle?: string;
+}) {
+  return apiFetch<Contact>("/v1/contacts", { method: "POST", body: JSON.stringify(input) });
+}
 export async function fetchProspects() {
   return apiFetch<Prospect[]>("/v1/prospects");
 }
@@ -388,6 +459,7 @@ export async function createOpportunity(input: {
   stage?: Opportunity["stage"];
   amount?: number;
   currency?: string;
+  expectedCloseAt?: string;
 }) {
   return apiFetch<Opportunity>("/v1/opportunities", {
     method: "POST",
@@ -413,6 +485,17 @@ export async function fetchContracts() {
 export async function fetchInvoices() {
   return apiFetch<Invoice[]>("/v1/invoices?limit=100&offset=0");
 }
+export async function fetchBillingReminderSettings() {
+  return apiFetch<{ settings: BillingReminderSettings; deliveries: BillingReminderDelivery[] }>(
+    "/v1/billing/reminders?limit=50&offset=0",
+  );
+}
+export async function saveBillingReminderSettings(input: Omit<BillingReminderSettings, "id" | "updatedAt">) {
+  return apiFetch<BillingReminderSettings>("/v1/billing/reminders", {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
 export async function createClient(input: {
   companyId?: string;
   status?: Client["status"];
@@ -425,6 +508,7 @@ export async function createContract(input: {
   clientId: string;
   status?: Contract["status"];
   startedAt?: string;
+  billingDay?: number;
   monthlyValue: number;
   setupFee?: number;
   currency?: string;
@@ -439,6 +523,9 @@ export async function createInvoice(input: {
   dueDate: string;
   subtotal: number;
   currency?: string;
+  paymentProvider?: "manual" | "asaas";
+  providerPaymentId?: string;
+  paymentUrl?: string;
 }) {
   return apiFetch<Invoice>("/v1/invoices", { method: "POST", body: JSON.stringify(input) });
 }

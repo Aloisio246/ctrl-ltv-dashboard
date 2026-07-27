@@ -7,6 +7,7 @@ import {
   ShieldCheck,
   CalendarClock,
   Building2,
+  ContactRound,
   Wallet,
   HeartPulse,
   BarChart3,
@@ -38,6 +39,14 @@ export const MODULES: ModuleDef[] = [
     description: "Fontes, execuções e resultados brutos antes de virarem prospects.",
     to: "/capture",
     icon: Radar,
+    phase: "live",
+  },
+  {
+    key: "contacts",
+    label: "Contatos",
+    description: "Pessoas e empresas que podem avançar para a prospecção e virar clientes.",
+    to: "/contacts",
+    icon: ContactRound,
     phase: "live",
   },
   {
