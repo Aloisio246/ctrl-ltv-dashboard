@@ -1,6 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { BellRing, CircleDollarSign, CreditCard, FileText, Plus, Receipt, Save, TrendingUp } from "lucide-react";
+import {
+  BellRing,
+  CircleDollarSign,
+  CreditCard,
+  FileText,
+  Pencil,
+  Plus,
+  Receipt,
+  Save,
+  TrendingUp,
+} from "lucide-react";
 import { getModule } from "@/lib/modules";
 import {
   createContract,
@@ -9,12 +19,15 @@ import {
   createPayment,
   fetchBillingReminderSettings,
   fetchClients,
+  fetchCompanies,
   fetchContracts,
   fetchInvoices,
   fetchMetricsSummary,
   saveBillingReminderSettings,
+  updateContract,
   type BillingReminderSettings,
   type Client,
+  type Company,
   type Contract,
   type Invoice,
   type MetricsSummary,
@@ -27,7 +40,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toIsoDate } from "@/lib/format";
 
 const mod = getModule("finance")!;
-const defaultReminderTemplate = "Olá, {{nome}}! A cobrança da {{empresa}} no valor de {{valor}} vence hoje, {{data}}. Acesse o link para pagamento: {{link_pagamento}}";
+const defaultReminderTemplate =
+  "Olá, {{nome}}! A cobrança da {{empresa}} no valor de {{valor}} vence hoje, {{data}}. Acesse o link para pagamento: {{link_pagamento}}";
 const defaultReminderSettings: BillingReminderSettings = {
   id: null,
   enabled: false,
@@ -46,11 +60,13 @@ export const Route = createFileRoute("/_shell/finance")({
 function FinancePage() {
   const [metrics, setMetrics] = useState<MetricsSummary | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [showContract, setShowContract] = useState(false);
+  const [editingContractId, setEditingContractId] = useState<string | null>(null);
   const [showInvoice, setShowInvoice] = useState(false);
   const [showCost, setShowCost] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -71,24 +87,40 @@ function FinancePage() {
   const [costCategory, setCostCategory] = useState("delivery");
   const [paymentAmounts, setPaymentAmounts] = useState<Record<string, string>>({});
   const [paymentSaving, setPaymentSaving] = useState<string | null>(null);
-  const [reminderSettings, setReminderSettings] = useState<BillingReminderSettings>(defaultReminderSettings);
+  const [reminderSettings, setReminderSettings] =
+    useState<BillingReminderSettings>(defaultReminderSettings);
   const [reminderSaving, setReminderSaving] = useState(false);
 
   async function load() {
-    const [metricResult, clientResult, contractResult, invoiceResult, reminderResult] = await Promise.all([
+    const [
+      metricResult,
+      clientResult,
+      companyResult,
+      contractResult,
+      invoiceResult,
+      reminderResult,
+    ] = await Promise.all([
       fetchMetricsSummary(),
       fetchClients(),
+      fetchCompanies(),
       fetchContracts(),
       fetchInvoices(),
       fetchBillingReminderSettings(),
     ]);
-    if (!metricResult.ok || !clientResult.ok || !contractResult.ok || !invoiceResult.ok) {
+    if (
+      !metricResult.ok ||
+      !clientResult.ok ||
+      !companyResult.ok ||
+      !contractResult.ok ||
+      !invoiceResult.ok
+    ) {
       setError("Não foi possível carregar o financeiro local.");
       return;
     }
     setError(null);
     setMetrics(metricResult.data);
     setClients(clientResult.data);
+    setCompanies(companyResult.data);
     setContracts(contractResult.data);
     setInvoices(invoiceResult.data);
     if (reminderResult.ok) setReminderSettings(reminderResult.data.settings);
@@ -101,6 +133,14 @@ function FinancePage() {
     () => new Map(clients.map((client) => [client.id, client])),
     [clients],
   );
+  const companiesById = useMemo(
+    () => new Map(companies.map((company) => [company.id, company])),
+    [companies],
+  );
+  const clientName = (clientId: string) => {
+    const client = clientsById.get(clientId);
+    return companiesById.get(client?.companyId ?? "")?.name ?? "Cliente sem empresa";
+  };
   const money = (value: string | number) =>
     Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -108,18 +148,27 @@ function FinancePage() {
     event.preventDefault();
     setSaving(true);
     setNotice(null);
-    const result = await createContract({
-      clientId: selectedClient,
-      startedAt: toIsoDate(startedAt),
-      billingDay: billingDay ? Number(billingDay) : undefined,
-      monthlyValue: Number(monthlyValue),
-      setupFee: Number(setupFee || 0),
-      currency: "BRL",
-    });
+    const result = editingContractId
+      ? await updateContract(editingContractId, {
+          startedAt: toIsoDate(startedAt),
+          billingDay: billingDay ? Number(billingDay) : undefined,
+          monthlyValue: Number(monthlyValue),
+          setupFee: Number(setupFee || 0),
+          currency: "BRL",
+        })
+      : await createContract({
+          clientId: selectedClient,
+          startedAt: toIsoDate(startedAt),
+          billingDay: billingDay ? Number(billingDay) : undefined,
+          monthlyValue: Number(monthlyValue),
+          setupFee: Number(setupFee || 0),
+          currency: "BRL",
+        });
     if (!result.ok) setNotice(result.error.message);
     else {
-      setNotice("Contrato criado e incluído no MRR.");
+      setNotice(editingContractId ? "Contrato atualizado." : "Contrato criado e incluído no MRR.");
       setShowContract(false);
+      setEditingContractId(null);
       setSelectedClient("");
       setMonthlyValue("");
       setSetupFee("");
@@ -128,6 +177,20 @@ function FinancePage() {
       await load();
     }
     setSaving(false);
+  }
+
+  function startEditingContract(contract: Contract) {
+    setEditingContractId(contract.id);
+    setSelectedClient(contract.clientId);
+    setMonthlyValue(String(contract.monthlyValue));
+    setSetupFee(String(contract.setupFee ?? 0));
+    setStartedAt(contract.startedAt ? contract.startedAt.slice(0, 10) : "");
+    setBillingDay(contract.billingDay ? String(contract.billingDay) : "");
+    setShowInvoice(false);
+    setShowCost(false);
+    setShowContract(true);
+    setNotice(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function handleCreateInvoice(event: FormEvent<HTMLFormElement>) {
@@ -208,7 +271,11 @@ function FinancePage() {
     if (!result.ok) setNotice(result.error.message);
     else {
       setReminderSettings(result.data);
-      setNotice(result.data.enabled ? "Lembretes automáticos ativados com segurança." : "Lembretes automáticos desativados.");
+      setNotice(
+        result.data.enabled
+          ? "Lembretes automáticos ativados com segurança."
+          : "Lembretes automáticos desativados.",
+      );
     }
     setReminderSaving(false);
   }
@@ -247,11 +314,18 @@ function FinancePage() {
       <section className="surface-card border-lime/15 p-5">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-lime"><BellRing className="h-4 w-4" /> Automação de recebimentos</div>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-lime">
+              <BellRing className="h-4 w-4" /> Automação de recebimentos
+            </div>
             <h2 className="mt-2 font-display text-xl font-semibold">Lembrete de recebimento</h2>
-            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">Ative o worker para preparar e disparar lembretes no dia configurado do contrato. O sistema não envia nada sem canal conectado e link de pagamento válido.</p>
+            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+              Ative o worker para preparar e disparar lembretes no dia configurado do contrato. O
+              sistema não envia nada sem canal conectado e link de pagamento válido.
+            </p>
           </div>
-          <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${reminderSettings.enabled ? "border-lime/30 bg-lime/10 text-lime" : "border-amber-300/25 bg-amber-300/10 text-amber-200"}`}>
+          <span
+            className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${reminderSettings.enabled ? "border-lime/30 bg-lime/10 text-lime" : "border-amber-300/25 bg-amber-300/10 text-amber-200"}`}
+          >
             {reminderSettings.enabled ? "ativo" : "desativado"}
           </span>
         </div>
@@ -262,7 +336,9 @@ function FinancePage() {
                 type="checkbox"
                 className="h-4 w-4 accent-lime"
                 checked={reminderSettings.enabled}
-                onChange={(event) => setReminderSettings((current) => ({ ...current, enabled: event.target.checked }))}
+                onChange={(event) =>
+                  setReminderSettings((current) => ({ ...current, enabled: event.target.checked }))
+                }
               />
               Ativar disparo automático dos lembretes
             </label>
@@ -273,8 +349,16 @@ function FinancePage() {
                   ariaLabel="Canal de envio dos lembretes"
                   className="mt-2"
                   value={reminderSettings.channel}
-                  onValueChange={(value) => setReminderSettings((current) => ({ ...current, channel: value as BillingReminderSettings["channel"] }))}
-                  options={[{ value: "whatsapp", label: "WhatsApp" }, { value: "email", label: "E-mail" }]}
+                  onValueChange={(value) =>
+                    setReminderSettings((current) => ({
+                      ...current,
+                      channel: value as BillingReminderSettings["channel"],
+                    }))
+                  }
+                  options={[
+                    { value: "whatsapp", label: "WhatsApp" },
+                    { value: "email", label: "E-mail" },
+                  ]}
                 />
               </label>
               <label className="space-y-2 text-sm font-medium">
@@ -283,38 +367,102 @@ function FinancePage() {
                   ariaLabel="Provedor de pagamento dos lembretes"
                   className="mt-2"
                   value={reminderSettings.paymentProvider}
-                  onValueChange={(value) => setReminderSettings((current) => ({ ...current, paymentProvider: value as BillingReminderSettings["paymentProvider"] }))}
-                  options={[{ value: "manual", label: "Link manual / cobrança" }, { value: "asaas", label: "Asaas (futuro)" }]}
+                  onValueChange={(value) =>
+                    setReminderSettings((current) => ({
+                      ...current,
+                      paymentProvider: value as BillingReminderSettings["paymentProvider"],
+                    }))
+                  }
+                  options={[
+                    { value: "manual", label: "Link manual / cobrança" },
+                    { value: "asaas", label: "Asaas (futuro)" },
+                  ]}
                 />
               </label>
               <label className="space-y-2 text-sm font-medium">
                 Dias antes do vencimento
-                <Input className="mt-2" type="number" min="0" max="30" value={reminderSettings.daysBeforeDue} onChange={(event) => setReminderSettings((current) => ({ ...current, daysBeforeDue: Number(event.target.value) }))} />
+                <Input
+                  className="mt-2"
+                  type="number"
+                  min="0"
+                  max="30"
+                  value={reminderSettings.daysBeforeDue}
+                  onChange={(event) =>
+                    setReminderSettings((current) => ({
+                      ...current,
+                      daysBeforeDue: Number(event.target.value),
+                    }))
+                  }
+                />
               </label>
               <label className="space-y-2 text-sm font-medium">
                 Horário local do disparo
-                <Input className="mt-2" type="number" min="0" max="23" value={reminderSettings.sendHour} onChange={(event) => setReminderSettings((current) => ({ ...current, sendHour: Number(event.target.value) }))} />
+                <Input
+                  className="mt-2"
+                  type="number"
+                  min="0"
+                  max="23"
+                  value={reminderSettings.sendHour}
+                  onChange={(event) =>
+                    setReminderSettings((current) => ({
+                      ...current,
+                      sendHour: Number(event.target.value),
+                    }))
+                  }
+                />
               </label>
             </div>
             <label className="space-y-2 text-sm font-medium">
               Mensagem padrão
-              <Textarea className="mt-2 min-h-32" value={reminderSettings.template} onChange={(event) => setReminderSettings((current) => ({ ...current, template: event.target.value }))} />
+              <Textarea
+                className="mt-2 min-h-32"
+                value={reminderSettings.template}
+                onChange={(event) =>
+                  setReminderSettings((current) => ({ ...current, template: event.target.value }))
+                }
+              />
             </label>
-            <Button type="button" size="sm" onClick={() => void handleSaveReminderSettings()} disabled={reminderSaving}>
-              <Save className="mr-2 h-3.5 w-3.5" /> {reminderSaving ? "Salvando…" : "Salvar configuração"}
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => void handleSaveReminderSettings()}
+              disabled={reminderSaving}
+            >
+              <Save className="mr-2 h-3.5 w-3.5" />{" "}
+              {reminderSaving ? "Salvando…" : "Salvar configuração"}
             </Button>
           </div>
           <div className="rounded-lg border border-border/60 bg-surface/40 p-4">
             <div className="text-sm font-semibold">Guia de personalização</div>
-            <p className="mt-1 text-xs text-muted-foreground">Use estas variáveis exatamente como estão na mensagem:</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Use estas variáveis exatamente como estão na mensagem:
+            </p>
             <div className="mt-3 space-y-2 text-xs">
-              <div><code className="text-lime">{"{{nome}}"}</code><span className="ml-2 text-muted-foreground">nome do contato</span></div>
-              <div><code className="text-lime">{"{{empresa}}"}</code><span className="ml-2 text-muted-foreground">nome da empresa</span></div>
-              <div><code className="text-lime">{"{{valor}}"}</code><span className="ml-2 text-muted-foreground">valor do contrato/cobrança</span></div>
-              <div><code className="text-lime">{"{{data}}"}</code><span className="ml-2 text-muted-foreground">data de vencimento</span></div>
-              <div><code className="text-lime">{"{{link_pagamento}}"}</code><span className="ml-2 text-muted-foreground">link retornado pelo provedor</span></div>
+              <div>
+                <code className="text-lime">{"{{nome}}"}</code>
+                <span className="ml-2 text-muted-foreground">nome do contato</span>
+              </div>
+              <div>
+                <code className="text-lime">{"{{empresa}}"}</code>
+                <span className="ml-2 text-muted-foreground">nome da empresa</span>
+              </div>
+              <div>
+                <code className="text-lime">{"{{valor}}"}</code>
+                <span className="ml-2 text-muted-foreground">valor do contrato/cobrança</span>
+              </div>
+              <div>
+                <code className="text-lime">{"{{data}}"}</code>
+                <span className="ml-2 text-muted-foreground">data de vencimento</span>
+              </div>
+              <div>
+                <code className="text-lime">{"{{link_pagamento}}"}</code>
+                <span className="ml-2 text-muted-foreground">link retornado pelo provedor</span>
+              </div>
             </div>
-            <p className="mt-4 border-t border-border/50 pt-3 text-xs text-muted-foreground">Para Asaas, ainda será necessário cadastrar a API Key e criar/associar a cobrança antes do link ser usado.</p>
+            <p className="mt-4 border-t border-border/50 pt-3 text-xs text-muted-foreground">
+              Para Asaas, ainda será necessário cadastrar a API Key e criar/associar a cobrança
+              antes do link ser usado.
+            </p>
           </div>
         </div>
       </section>
@@ -324,7 +472,9 @@ function FinancePage() {
           {showContract && (
             <form className="grid gap-4 md:grid-cols-2" onSubmit={handleCreateContract}>
               <div className="md:col-span-2">
-                <h2 className="font-display text-lg font-semibold">Novo contrato</h2>
+                <h2 className="font-display text-lg font-semibold">
+                  {editingContractId ? "Editar contrato" : "Novo contrato"}
+                </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   O valor recorrente entra no MRR após a criação.
                 </p>
@@ -339,8 +489,9 @@ function FinancePage() {
                   placeholder="Selecione um cliente"
                   options={clients.map((client) => ({
                     value: client.id,
-                    label: `${client.id.slice(0, 8)} · ${client.status}`,
+                    label: `${clientName(client.id)} · ${client.status}`,
                   }))}
+                  disabled={Boolean(editingContractId)}
                   required
                 />
               </label>
@@ -378,14 +529,35 @@ function FinancePage() {
               </label>
               <label className="space-y-2 text-sm font-medium">
                 Dia de recebimento
-                <Input className="mt-2" type="number" min="1" max="31" value={billingDay} onChange={(event) => setBillingDay(event.target.value)} placeholder="Ex.: 10" />
-                <span className="text-xs font-normal text-muted-foreground">Usado futuramente para programar o lembrete.</span>
+                <Input
+                  className="mt-2"
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={billingDay}
+                  onChange={(event) => setBillingDay(event.target.value)}
+                  placeholder="Ex.: 10"
+                />
+                <span className="text-xs font-normal text-muted-foreground">
+                  Usado futuramente para programar o lembrete.
+                </span>
               </label>
               <div className="flex gap-2 md:col-span-2">
                 <Button disabled={saving} type="submit">
-                  {saving ? "Salvando…" : "Criar contrato"}
+                  {saving
+                    ? "Salvando…"
+                    : editingContractId
+                      ? "Salvar alterações"
+                      : "Criar contrato"}
                 </Button>
-                <Button type="button" variant="ghost" onClick={() => setShowContract(false)}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setShowContract(false);
+                    setEditingContractId(null);
+                  }}
+                >
                   Cancelar
                 </Button>
               </div>
@@ -409,7 +581,7 @@ function FinancePage() {
                   placeholder="Selecione um cliente"
                   options={clients.map((client) => ({
                     value: client.id,
-                    label: `${client.id.slice(0, 8)} · ${client.status}`,
+                    label: `${clientName(client.id)} · ${client.status}`,
                   }))}
                   required
                 />
@@ -426,7 +598,7 @@ function FinancePage() {
                     .filter((contract) => !invoiceClient || contract.clientId === invoiceClient)
                     .map((contract) => ({
                       value: contract.id,
-                      label: `${money(contract.monthlyValue)} / mês`,
+                      label: `${clientName(contract.clientId)} · ${money(contract.monthlyValue)} / mês`,
                     }))}
                 />
               </label>
@@ -471,7 +643,10 @@ function FinancePage() {
                   onChange={(event) => setPaymentUrl(event.target.value)}
                   placeholder="https://..."
                 />
-                <span className="text-xs font-normal text-muted-foreground">Pode ser preenchido manualmente agora ou pelo Asaas quando a integração estiver ativa.</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  Pode ser preenchido manualmente agora ou pelo Asaas quando a integração estiver
+                  ativa.
+                </span>
               </label>
               <div className="flex items-end gap-2">
                 <Button disabled={saving} type="submit">
@@ -501,7 +676,7 @@ function FinancePage() {
                   placeholder="Custo geral da operação"
                   options={clients.map((client) => ({
                     value: client.id,
-                    label: client.id.slice(0, 8),
+                    label: clientName(client.id),
                   }))}
                 />
               </label>
@@ -582,11 +757,18 @@ function FinancePage() {
                 className="flex flex-col gap-2 rounded-lg border border-border/50 bg-surface/40 p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
               >
                 <span>
-                  {clientsById.get(contract.clientId)?.id.slice(0, 8) ??
-                    contract.clientId.slice(0, 8)}{" "}
-                  · <span className="capitalize">{contract.status}</span>
+                  {clientName(contract.clientId)} ·{" "}
+                  <span className="capitalize">{contract.status}</span>
                 </span>
-                <strong>{money(contract.monthlyValue)} / mês{contract.billingDay ? ` · dia ${contract.billingDay}` : ""}</strong>
+                <div className="flex items-center gap-3">
+                  <strong>
+                    {money(contract.monthlyValue)} / mês
+                    {contract.billingDay ? ` · dia ${contract.billingDay}` : ""}
+                  </strong>
+                  <Button size="sm" variant="ghost" onClick={() => startEditingContract(contract)}>
+                    <Pencil className="h-4 w-4" /> Editar
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -606,7 +788,8 @@ function FinancePage() {
               >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <span>
-                    {invoice.number} · <span className="capitalize">{invoice.status}</span>
+                    {clientName(invoice.clientId)} · {invoice.number} ·{" "}
+                    <span className="capitalize">{invoice.status}</span>
                   </span>
                   <strong>{money(invoice.subtotal)}</strong>
                 </div>

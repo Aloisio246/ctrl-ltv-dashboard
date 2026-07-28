@@ -253,7 +253,13 @@ export type Me = {
   activeMembership: { organizationId: string; organizationName: string; role: string };
   memberships: Array<{ organizationId: string; organizationName: string; role: string }>;
 };
-export type IntegrationProvider = "google_places" | "serper" | "rapidapi" | "apify" | "whatsapp_cloud" | "instagram" | "email" | "asaas";
+export type IntegrationProvider =
+  | "google_places"
+  | "serper"
+  | "rapidapi"
+  | "apify"
+  | "email"
+  | "asaas";
 export type Integration = {
   id: string;
   provider: IntegrationProvider;
@@ -263,6 +269,18 @@ export type Integration = {
   hasCredentials: boolean;
   lastError: string | null;
   updatedAt: string;
+};
+export type EvolutionInstance = {
+  id: string;
+  channelAccountId: string;
+  label: string;
+  instanceName: string;
+  status: "disconnected" | "connecting" | "connected" | "error";
+  phoneNumber: string | null;
+  profileName: string | null;
+  lastError: string | null;
+  connectedAt: string | null;
+  createdAt: string;
 };
 
 export class ApiUnavailableError extends Error {
@@ -383,9 +401,16 @@ export async function fetchCaptureRuns() {
 }
 
 export async function fetchCaptureRunLogs(runId: string) {
-  return apiFetch<Array<{ id: string; level: string; event: string; message: string; metadata: Record<string, unknown>; createdAt: string }>>(
-    `/v1/capture/runs/${runId}/logs`,
-  );
+  return apiFetch<
+    Array<{
+      id: string;
+      level: string;
+      event: string;
+      message: string;
+      metadata: Record<string, unknown>;
+      createdAt: string;
+    }>
+  >(`/v1/capture/runs/${runId}/logs`);
 }
 export async function fetchCaptureRecords(status?: CaptureRecord["status"]) {
   return apiFetch<CaptureRecord[]>(
@@ -435,10 +460,10 @@ export async function importCaptureRecords(input: {
     reviewCount?: number;
   }>;
 }) {
-  return apiFetch<{ run: CaptureRun; summary: { acceptedCount: number; duplicateCount: number; errorCount: number } }>(
-    "/v1/capture/import",
-    { method: "POST", body: JSON.stringify(input) },
-  );
+  return apiFetch<{
+    run: CaptureRun;
+    summary: { acceptedCount: number; duplicateCount: number; errorCount: number };
+  }>("/v1/capture/import", { method: "POST", body: JSON.stringify(input) });
 }
 export async function reviewCaptureRecord(id: string, status: "approved" | "rejected") {
   return apiFetch<CaptureRecord>(`/v1/capture/records/${id}/review`, {
@@ -467,6 +492,21 @@ export async function createCompany(input: {
 }) {
   return apiFetch<Company>("/v1/companies", { method: "POST", body: JSON.stringify(input) });
 }
+export async function updateCompany(
+  id: string,
+  input: Partial<{
+    name: string;
+    normalizedName: string;
+    website: string;
+    phone: string;
+    city: string;
+    state: string;
+    country: string;
+    source: string;
+  }>,
+) {
+  return apiFetch<Company>(`/v1/companies/${id}`, { method: "PATCH", body: JSON.stringify(input) });
+}
 export async function fetchContacts() {
   return apiFetch<Contact[]>("/v1/contacts");
 }
@@ -478,6 +518,18 @@ export async function createContact(input: {
   roleTitle?: string;
 }) {
   return apiFetch<Contact>("/v1/contacts", { method: "POST", body: JSON.stringify(input) });
+}
+export async function updateContact(
+  id: string,
+  input: Partial<{
+    companyId: string;
+    name: string;
+    email: string;
+    phone: string;
+    roleTitle: string;
+  }>,
+) {
+  return apiFetch<Contact>(`/v1/contacts/${id}`, { method: "PATCH", body: JSON.stringify(input) });
 }
 export async function fetchProspects() {
   return apiFetch<Prospect[]>("/v1/prospects");
@@ -539,7 +591,9 @@ export async function fetchBillingReminderSettings() {
     "/v1/billing/reminders?limit=50&offset=0",
   );
 }
-export async function saveBillingReminderSettings(input: Omit<BillingReminderSettings, "id" | "updatedAt">) {
+export async function saveBillingReminderSettings(
+  input: Omit<BillingReminderSettings, "id" | "updatedAt">,
+) {
   return apiFetch<BillingReminderSettings>("/v1/billing/reminders", {
     method: "PUT",
     body: JSON.stringify(input),
@@ -557,6 +611,17 @@ export async function createClient(input: {
 }) {
   return apiFetch<Client>("/v1/clients", { method: "POST", body: JSON.stringify(input) });
 }
+export async function updateClient(
+  id: string,
+  input: Partial<{
+    companyId: string;
+    status: Client["status"];
+    startedAt: string;
+    notes: string;
+  }>,
+) {
+  return apiFetch<Client>(`/v1/clients/${id}`, { method: "PATCH", body: JSON.stringify(input) });
+}
 export async function createContract(input: {
   clientId: string;
   status?: Contract["status"];
@@ -567,6 +632,23 @@ export async function createContract(input: {
   currency?: string;
 }) {
   return apiFetch<Contract>("/v1/contracts", { method: "POST", body: JSON.stringify(input) });
+}
+export async function updateContract(
+  id: string,
+  input: Partial<{
+    status: Contract["status"];
+    startedAt: string;
+    endedAt: string;
+    billingDay: number;
+    monthlyValue: number;
+    setupFee: number;
+    currency: string;
+  }>,
+) {
+  return apiFetch<Contract>(`/v1/contracts/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
 }
 export async function createInvoice(input: {
   clientId: string;
@@ -614,9 +696,9 @@ export async function fetchClientLtv(id: string) {
     realizedCost: string;
     mrr: string;
     monthsActive: number;
-    realizedLtv: number;
-    netLtv: number;
-    contractedLtv: number;
+    ltv: number;
+    received: number;
+    outstanding: number;
   }>(`/v1/metrics/clients/${id}/ltv`);
 }
 export async function fetchConversations() {
@@ -661,6 +743,37 @@ export async function saveIntegration(input: {
 
 export async function removeIntegration(provider: IntegrationProvider) {
   return apiFetch<void>(`/v1/integrations/${provider}`, { method: "DELETE" });
+}
+
+export async function fetchEvolutionInstances() {
+  return apiFetch<EvolutionInstance[]>("/v1/evolution/instances");
+}
+
+export async function createEvolutionInstance(label: string) {
+  return apiFetch<EvolutionInstance>("/v1/evolution/instances", {
+    method: "POST",
+    body: JSON.stringify({ label }),
+  });
+}
+
+export async function connectEvolutionInstance(id: string) {
+  return apiFetch<{ id: string; status: string; qrCode: string | null }>(
+    `/v1/evolution/instances/${id}/connect`,
+    { method: "POST" },
+  );
+}
+
+export async function fetchEvolutionInstanceStatus(id: string) {
+  return apiFetch<{ id: string; status: EvolutionInstance["status"] }>(
+    `/v1/evolution/instances/${id}/status`,
+  );
+}
+
+export async function disconnectEvolutionInstance(id: string) {
+  return apiFetch<{ id: string; status: string }>(
+    `/v1/evolution/instances/${id}/disconnect`,
+    { method: "POST" },
+  );
 }
 
 export async function login(email: string, password: string) {
@@ -713,9 +826,9 @@ export async function bootstrap(input: {
           ? "Confira os dados informados."
           : payload?.error === "public_registration_disabled"
             ? "A criação pública de workspaces está desativada."
-          : response.status === 409
-            ? "Este e-mail ou identificador de workspace já está em uso."
-            : "Não foi possível criar o workspace.";
+            : response.status === 409
+              ? "Este e-mail ou identificador de workspace já está em uso."
+              : "Não foi possível criar o workspace.";
       return { ok: false as const, error: new ApiUnavailableError(message) };
     }
     const payload = (await response.json()) as {

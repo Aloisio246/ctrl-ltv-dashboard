@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Building2, HeartPulse, Plus, Search, Sparkles } from "lucide-react";
+import { Building2, HeartPulse, Pencil, Plus, Search, Sparkles } from "lucide-react";
 import { getModule } from "@/lib/modules";
 import {
   createClient,
@@ -8,6 +8,9 @@ import {
   fetchClients,
   fetchCompanies,
   fetchContracts,
+  createContract,
+  updateClient,
+  updateContract,
   type Client,
   type Company,
   type Contract,
@@ -25,6 +28,8 @@ const statuses: Array<{ value: Client["status"]; label: string }> = [
   { value: "active", label: "Ativo" },
   { value: "paused", label: "Pausado" },
   { value: "at_risk", label: "Em risco" },
+  { value: "cancelled", label: "Cancelado" },
+  { value: "closed", label: "Encerrado" },
 ];
 
 export const Route = createFileRoute("/_shell/clients")({
@@ -41,6 +46,7 @@ function ClientsPage() {
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingClientId, setEditingClientId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [companyId, setCompanyId] = useState("");
@@ -56,9 +62,9 @@ function ClientsPage() {
       {
         realizedRevenue: string;
         realizedCost: string;
-        realizedLtv: number;
-        netLtv: number;
-        contractedLtv: number;
+        ltv: number;
+        received: number;
+        outstanding: number;
         monthsActive: number;
       }
     >
@@ -114,6 +120,58 @@ function ClientsPage() {
     }
     setSaving(true);
     setFormError(null);
+    if (editingClientId) {
+      const result = await updateClient(editingClientId, {
+        companyId,
+        status,
+        startedAt: toIsoDate(startedAt),
+        notes: notes.trim(),
+      });
+      if (!result.ok) {
+        setFormError(result.error.message);
+        setSaving(false);
+        return;
+      }
+      const existingContract = contractsByClient.get(editingClientId);
+      if (monthlyValue && billingDay) {
+        const contractResult = existingContract
+          ? await updateContract(existingContract.id, {
+              status:
+                status === "active"
+                  ? "active"
+                  : status === "paused"
+                    ? "paused"
+                    : existingContract.status,
+              startedAt: toIsoDate(startedAt),
+              monthlyValue: Number(monthlyValue),
+              billingDay: Number(billingDay),
+              currency: "BRL",
+            })
+          : await createContract({
+              clientId: editingClientId,
+              status: status === "active" ? "active" : "draft",
+              startedAt: toIsoDate(startedAt),
+              monthlyValue: Number(monthlyValue),
+              billingDay: Number(billingDay),
+              currency: "BRL",
+            });
+        if (!contractResult.ok) {
+          setFormError(contractResult.error.message);
+          setSaving(false);
+          return;
+        }
+      }
+      setShowForm(false);
+      setEditingClientId(null);
+      setCompanyId("");
+      setNotes("");
+      setStartedAt("");
+      setMonthlyValue("");
+      setBillingDay("");
+      await load();
+      setSaving(false);
+      return;
+    }
     const result = await createClient({
       companyId,
       status,
@@ -134,6 +192,20 @@ function ClientsPage() {
       await load();
     }
     setSaving(false);
+  }
+
+  function startEditing(client: Client) {
+    const contract = contractsByClient.get(client.id);
+    setEditingClientId(client.id);
+    setCompanyId(client.companyId ?? "");
+    setStatus(client.status);
+    setStartedAt(client.startedAt ? client.startedAt.slice(0, 10) : "");
+    setNotes(client.notes ?? "");
+    setMonthlyValue(contract ? String(contract.monthlyValue) : "");
+    setBillingDay(contract?.billingDay ? String(contract.billingDay) : "");
+    setFormError(null);
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function handleLtv(clientId: string) {
@@ -167,7 +239,8 @@ function ClientsPage() {
         <form className="surface-card grid gap-4 p-5 md:grid-cols-2" onSubmit={handleCreate}>
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 font-display text-lg font-semibold">
-              <Sparkles className="h-4 w-4 text-lime" /> Abrir relacionamento
+              <Sparkles className="h-4 w-4 text-lime" />{" "}
+              {editingClientId ? "Editar relacionamento" : "Abrir relacionamento"}
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
               Converta uma empresa qualificada em cliente sem recadastrar seus dados.
@@ -185,7 +258,11 @@ function ClientsPage() {
               required
             />
             <div className="mt-2 flex items-center justify-between gap-3 text-xs text-muted-foreground">
-              <span>{companies.length ? "A empresa vem da sua base de Contatos." : "Ainda não há empresas cadastradas."}</span>
+              <span>
+                {companies.length
+                  ? "A empresa vem da sua base de Contatos."
+                  : "Ainda não há empresas cadastradas."}
+              </span>
               <Link to="/contacts" className="shrink-0 text-lime hover:underline">
                 Cadastrar em Contatos
               </Link>
@@ -256,9 +333,16 @@ function ClientsPage() {
           {formError && <p className="md:col-span-2 text-sm text-destructive">{formError}</p>}
           <div className="flex gap-2 md:col-span-2">
             <Button disabled={saving} type="submit">
-              {saving ? "Salvando…" : "Criar cliente"}
+              {saving ? "Salvando…" : editingClientId ? "Salvar alterações" : "Criar cliente"}
             </Button>
-            <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setShowForm(false);
+                setEditingClientId(null);
+              }}
+            >
               Cancelar
             </Button>
           </div>
@@ -322,18 +406,18 @@ function ClientsPage() {
                 {clientLtv && (
                   <div className="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-lime/20 bg-lime/5 p-3 text-sm">
                     <div>
-                      <div className="text-xs text-muted-foreground">LTV recebido</div>
-                      <strong className="mt-1 block text-lime">
-                        {money(clientLtv.realizedLtv)}
+                      <div className="text-xs text-muted-foreground">LTV</div>
+                      <strong className="mt-1 block text-lime">{money(clientLtv.ltv)}</strong>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">Recebido</div>
+                      <strong className="mt-1 block">{money(clientLtv.received)}</strong>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">Em aberto</div>
+                      <strong className="mt-1 block text-amber-400">
+                        {money(clientLtv.outstanding)}
                       </strong>
-                    </div>
-                    <div>
-                      <div className="text-xs text-muted-foreground">LTV contratado</div>
-                      <strong className="mt-1 block">{money(clientLtv.contractedLtv)}</strong>
-                    </div>
-                    <div>
-                      <div className="text-xs text-muted-foreground">LTV líquido</div>
-                      <strong className="mt-1 block">{money(clientLtv.netLtv)}</strong>
                     </div>
                     <div>
                       <div className="text-xs text-muted-foreground">Meses ativos</div>
@@ -353,6 +437,14 @@ function ClientsPage() {
                     : clientLtv
                       ? "Atualizar LTV"
                       : "Ver LTV"}
+                </Button>
+                <Button
+                  className="mt-2 w-full"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => startEditing(client)}
+                >
+                  <Pencil className="h-4 w-4" /> Editar cliente
                 </Button>
               </article>
             );
