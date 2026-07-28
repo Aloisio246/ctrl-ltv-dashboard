@@ -47,7 +47,7 @@ copy .env.docker.example .env
 docker compose up -d --build
 ```
 
-Depois acesse [http://localhost:8081](http://localhost:8081). Como as chamadas são feitas pelo navegador, o frontend usa `http://localhost:4000` para alcançar a API publicada pelo Docker Desktop. Em uma VM ou ambiente remoto, substitua `VITE_API_URL` pela URL pública da API. Para não deixar credenciais no arquivo de configuração, remova `VITE_API_EMAIL` e `VITE_API_PASSWORD` do `.env` e use a tela de login.
+Depois acesse [http://localhost:8081](http://localhost:8081). Como as chamadas são feitas pelo navegador, o frontend usa `http://localhost:4000` para alcançar a API publicada pelo Docker Desktop. Em uma VM ou ambiente remoto, substitua `VITE_API_URL` pela URL pública da API. Credenciais nunca devem ser adicionadas a variáveis `VITE_*`, pois elas fazem parte do código entregue ao navegador; use sempre a tela de login.
 
 Para acompanhar ou parar o frontend:
 

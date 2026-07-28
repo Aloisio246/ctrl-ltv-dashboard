@@ -2,6 +2,8 @@ export const API_BASE_URL: string = (import.meta.env.VITE_API_URL as string | un
 
 const TOKEN_KEY = "ctrl_ltv_access_token";
 const REFRESH_KEY = "ctrl_ltv_refresh_token";
+let accessTokenMemory: string | null = null;
+let refreshInFlight: Promise<string | null> | null = null;
 
 export type DashboardSummary = {
   metrics: {
@@ -272,35 +274,82 @@ export class ApiUnavailableError extends Error {
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ApiUnavailableError };
 
 function getStoredToken() {
-  return typeof window === "undefined" ? null : window.localStorage.getItem(TOKEN_KEY);
+  if (typeof window === "undefined") return null;
+  if (accessTokenMemory) return accessTokenMemory;
+  accessTokenMemory = window.sessionStorage.getItem(TOKEN_KEY);
+  if (accessTokenMemory) return accessTokenMemory;
+
+  const legacyToken = window.localStorage.getItem(TOKEN_KEY);
+  const legacyRefreshToken = window.localStorage.getItem(REFRESH_KEY);
+  if (legacyToken) window.sessionStorage.setItem(TOKEN_KEY, legacyToken);
+  if (legacyRefreshToken) window.sessionStorage.setItem(REFRESH_KEY, legacyRefreshToken);
+  window.localStorage.removeItem(TOKEN_KEY);
+  window.localStorage.removeItem(REFRESH_KEY);
+  accessTokenMemory = legacyToken;
+  return accessTokenMemory;
 }
 
-async function loginFromLocalEnv() {
-  const email = import.meta.env.VITE_API_EMAIL as string | undefined;
-  const password = import.meta.env.VITE_API_PASSWORD as string | undefined;
-  if (!API_BASE_URL || !email || !password) return null;
-  const response = await fetch(`${API_BASE_URL}/v1/auth/login`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ email, password }),
+function getStoredRefreshToken() {
+  return typeof window === "undefined" ? null : window.sessionStorage.getItem(REFRESH_KEY);
+}
+
+function persistSession(session: { accessToken: string; refreshToken: string }) {
+  if (typeof window === "undefined") return;
+  accessTokenMemory = session.accessToken;
+  window.sessionStorage.setItem(TOKEN_KEY, session.accessToken);
+  window.sessionStorage.setItem(REFRESH_KEY, session.refreshToken);
+  window.localStorage.removeItem(TOKEN_KEY);
+  window.localStorage.removeItem(REFRESH_KEY);
+}
+
+function clearSession() {
+  accessTokenMemory = null;
+  if (typeof window === "undefined") return;
+  window.sessionStorage.removeItem(TOKEN_KEY);
+  window.sessionStorage.removeItem(REFRESH_KEY);
+  window.localStorage.removeItem(TOKEN_KEY);
+  window.localStorage.removeItem(REFRESH_KEY);
+}
+
+async function refreshAccessToken() {
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    const refreshToken = getStoredRefreshToken();
+    if (!API_BASE_URL || !refreshToken) return null;
+    try {
+      const response = await fetch(`${API_BASE_URL}/v1/auth/refresh`, {
+        method: "POST",
+        cache: "no-store",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!response.ok) {
+        clearSession();
+        return null;
+      }
+      const payload = (await response.json()) as {
+        data: { accessToken: string; refreshToken: string };
+      };
+      persistSession(payload.data);
+      return payload.data.accessToken;
+    } catch {
+      return null;
+    }
+  })().finally(() => {
+    refreshInFlight = null;
   });
-  if (!response.ok) throw new Error("Falha ao autenticar");
-  const payload = (await response.json()) as {
-    data: { accessToken: string; refreshToken: string };
-  };
-  window.localStorage.setItem(TOKEN_KEY, payload.data.accessToken);
-  window.localStorage.setItem(REFRESH_KEY, payload.data.refreshToken);
-  return payload.data.accessToken;
+  return refreshInFlight;
 }
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<ApiResult<T>> {
   if (!API_BASE_URL || typeof window === "undefined")
     return { ok: false, error: new ApiUnavailableError("Backend não conectado") };
   try {
-    let token = getStoredToken() ?? (await loginFromLocalEnv());
+    let token = getStoredToken();
     const request = () =>
       fetch(`${API_BASE_URL}${path}`, {
         ...init,
+        cache: "no-store",
         headers: {
           "content-type": "application/json",
           ...(init.headers ?? {}),
@@ -308,9 +357,9 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
         },
       });
     let response = await request();
-    if (response.status === 401) {
-      token = await loginFromLocalEnv();
-      response = await request();
+    if (response.status === 401 && !path.startsWith("/v1/auth/")) {
+      token = await refreshAccessToken();
+      if (token) response = await request();
     }
     if (!response.ok) throw new Error(`API retornou ${response.status}`);
     const payload = (await response.json()) as { data: T };
@@ -614,6 +663,7 @@ export async function login(email: string, password: string) {
   try {
     const response = await fetch(`${API_BASE_URL}/v1/auth/login`, {
       method: "POST",
+      cache: "no-store",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
@@ -622,8 +672,7 @@ export async function login(email: string, password: string) {
     const payload = (await response.json()) as {
       data: { accessToken: string; refreshToken: string };
     };
-    window.localStorage.setItem(TOKEN_KEY, payload.data.accessToken);
-    window.localStorage.setItem(REFRESH_KEY, payload.data.refreshToken);
+    persistSession(payload.data);
     return { ok: true as const, data: payload.data };
   } catch (error) {
     return {
@@ -647,6 +696,7 @@ export async function bootstrap(input: {
   try {
     const response = await fetch(`${API_BASE_URL}/v1/auth/bootstrap`, {
       method: "POST",
+      cache: "no-store",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(input),
     });
@@ -655,6 +705,8 @@ export async function bootstrap(input: {
       const message =
         payload?.error === "validation_error"
           ? "Confira os dados informados."
+          : payload?.error === "public_registration_disabled"
+            ? "A criação pública de workspaces está desativada."
           : response.status === 409
             ? "Este e-mail ou identificador de workspace já está em uso."
             : "Não foi possível criar o workspace.";
@@ -663,8 +715,7 @@ export async function bootstrap(input: {
     const payload = (await response.json()) as {
       data: { accessToken: string; refreshToken: string };
     };
-    window.localStorage.setItem(TOKEN_KEY, payload.data.accessToken);
-    window.localStorage.setItem(REFRESH_KEY, payload.data.refreshToken);
+    persistSession(payload.data);
     return { ok: true as const, data: payload.data };
   } catch (error) {
     return {
@@ -677,12 +728,12 @@ export async function bootstrap(input: {
 }
 
 export async function logout() {
-  const refreshToken =
-    typeof window === "undefined" ? null : window.localStorage.getItem(REFRESH_KEY);
+  const refreshToken = getStoredRefreshToken();
   try {
     if (refreshToken && API_BASE_URL)
       await fetch(`${API_BASE_URL}/v1/auth/logout`, {
         method: "POST",
+        cache: "no-store",
         headers: {
           "content-type": "application/json",
           ...(getStoredToken() ? { authorization: `Bearer ${getStoredToken()}` } : {}),
@@ -690,9 +741,6 @@ export async function logout() {
         body: JSON.stringify({ refreshToken }),
       });
   } finally {
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(TOKEN_KEY);
-      window.localStorage.removeItem(REFRESH_KEY);
-    }
+    clearSession();
   }
 }

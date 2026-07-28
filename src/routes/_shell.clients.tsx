@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { AppSelect } from "@/components/ui/app-select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { toIsoDate } from "@/lib/format";
 
 const mod = getModule("clients")!;
 const statuses: Array<{ value: Client["status"]; label: string }> = [
@@ -25,10 +26,6 @@ const statuses: Array<{ value: Client["status"]; label: string }> = [
   { value: "paused", label: "Pausado" },
   { value: "at_risk", label: "Em risco" },
 ];
-
-function toIsoDate(value: string) {
-  return value ? new Date(`${value}T00:00:00`).toISOString() : undefined;
-}
 
 export const Route = createFileRoute("/_shell/clients")({
   head: () => ({

@@ -16,6 +16,7 @@ import { ApiUnavailableState, EmptyState } from "@/components/states";
 import { AppSelect } from "@/components/ui/app-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toIsoDate } from "@/lib/format";
 
 const mod = getModule("pipeline")!;
 const stages = ["new", "qualified", "proposal", "negotiation", "won", "lost"] as const;
@@ -27,10 +28,6 @@ const stageLabels: Record<(typeof stages)[number], string> = {
   won: "Ganho",
   lost: "Perdido",
 };
-
-function toIsoDate(value: string) {
-  return value ? new Date(`${value}T00:00:00`).toISOString() : undefined;
-}
 
 export const Route = createFileRoute("/_shell/pipeline")({
   head: () => ({ meta: [{ title: `${mod.label} · Ctrl LTV` }, { name: "description", content: mod.description }] }),

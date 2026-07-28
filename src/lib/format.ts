@@ -19,3 +19,7 @@ export function formatMetric(
   if (format === "percent") return pct.format(value);
   return num.format(value);
 }
+
+export function toIsoDate(value: string): string | undefined {
+  return value ? new Date(`${value}T00:00:00`).toISOString() : undefined;
+}
