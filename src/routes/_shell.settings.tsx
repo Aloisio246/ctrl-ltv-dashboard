@@ -1,15 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Building2, Check, CreditCard, ExternalLink, KeyRound, Link2, Mail, Save, ShieldCheck, UserRound, X } from "lucide-react";
+import { Building2, Check, CreditCard, ExternalLink, KeyRound, Link2, Mail, MessageCircle, Plus, Save, ShieldCheck, Unplug, UserRound, X } from "lucide-react";
 import { getModule } from "@/lib/modules";
 import {
   fetchIntegrations,
+  fetchEvolutionInstances,
+  createEvolutionInstance,
+  connectEvolutionInstance,
+  disconnectEvolutionInstance,
   fetchMe,
   removeIntegration,
   saveIntegration,
   type Integration,
   type IntegrationProvider,
   type Me,
+  type EvolutionInstance,
 } from "@/lib/api-client";
 import { ApiUnavailableState, EmptyState } from "@/components/states";
 import { Button } from "@/components/ui/button";
@@ -77,32 +82,6 @@ const integrationDefinitions: Array<{
     docsUrl: "https://console.apify.com/account/integrations",
   },
   {
-    provider: "whatsapp_cloud",
-    title: "WhatsApp Cloud",
-    description: "Prepare a conta oficial para receber mensagens e operar a Inbox.",
-    icon: KeyRound,
-    fields: [
-      { key: "phoneNumberId", label: "Phone Number ID", placeholder: "ID do número no Meta Business" },
-      { key: "accessToken", label: "Access Token", placeholder: "Token da Meta" },
-      { key: "verifyToken", label: "Verify Token", placeholder: "Token de verificação do webhook" },
-      { key: "appSecret", label: "App Secret", placeholder: "Segredo do aplicativo Meta" },
-    ],
-    note: "A política de envio continua exigindo contexto, consentimento e aprovação quando aplicável.",
-    docsUrl: "https://developers.facebook.com/apps/",
-  },
-  {
-    provider: "instagram",
-    title: "Instagram Direct",
-    description: "Conecte uma conta profissional para responder conversas elegíveis.",
-    icon: Link2,
-    fields: [
-      { key: "accountId", label: "Instagram Business Account ID", placeholder: "ID da conta profissional" },
-      { key: "accessToken", label: "Access Token", placeholder: "Token da Meta" },
-    ],
-    note: "O Direct respeita as regras oficiais: não inicia conversa fria automaticamente.",
-    docsUrl: "https://developers.facebook.com/apps/",
-  },
-  {
     provider: "email",
     title: "E-mail transacional",
     description: "Deixe uma conta pronta para avisos, follow-ups e notificações do sistema.",
@@ -132,17 +111,23 @@ const integrationDefinitions: Array<{
 function SettingsPage() {
   const [me, setMe] = useState<Me | null>(null);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [evolutionInstances, setEvolutionInstances] = useState<EvolutionInstance[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
     setError(null);
-    const [meResult, integrationResult] = await Promise.all([fetchMe(), fetchIntegrations()]);
-    if (!meResult.ok || !integrationResult.ok) {
+    const [meResult, integrationResult, evolutionResult] = await Promise.all([
+      fetchMe(),
+      fetchIntegrations(),
+      fetchEvolutionInstances(),
+    ]);
+    if (!meResult.ok || !integrationResult.ok || !evolutionResult.ok) {
       setError("Não foi possível carregar as configurações.");
       return;
     }
     setMe(meResult.data);
     setIntegrations(integrationResult.data);
+    setEvolutionInstances(evolutionResult.data);
   }
 
   useEffect(() => {
@@ -194,6 +179,10 @@ function SettingsPage() {
               <p className="mt-1 text-sm text-muted-foreground">As credenciais são armazenadas de forma protegida e nunca são exibidas novamente.</p>
             </div>
             <div className="grid gap-4 xl:grid-cols-2">
+              <EvolutionCard
+                instances={evolutionInstances}
+                onChanged={(instances) => setEvolutionInstances(instances)}
+              />
               {integrationDefinitions.map((definition) => (
                 <IntegrationCard
                   key={definition.provider}
@@ -208,6 +197,95 @@ function SettingsPage() {
         </>
       )}
     </div>
+  );
+}
+
+function EvolutionCard({
+  instances,
+  onChanged,
+}: {
+  instances: EvolutionInstance[];
+  onChanged: (instances: EvolutionInstance[]) => void;
+}) {
+  const [label, setLabel] = useState("WhatsApp comercial");
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  async function createInstance() {
+    setBusy(true);
+    setMessage(null);
+    const created = await createEvolutionInstance(label);
+    if (!created.ok) {
+      setMessage(created.error.message);
+      setBusy(false);
+      return;
+    }
+    onChanged([created.data, ...instances]);
+    const connection = await connectEvolutionInstance(created.data.id);
+    if (connection.ok) setQrCode(connection.data.qrCode);
+    else setMessage(connection.error.message);
+    setBusy(false);
+  }
+
+  async function reconnect(instance: EvolutionInstance) {
+    setBusy(true);
+    setMessage(null);
+    const result = await connectEvolutionInstance(instance.id);
+    if (result.ok) {
+      setQrCode(result.data.qrCode);
+      setMessage(result.data.qrCode ? "Leia o QR Code no WhatsApp." : "Conexão solicitada.");
+    } else setMessage(result.error.message);
+    setBusy(false);
+  }
+
+  async function disconnect(instance: EvolutionInstance) {
+    setBusy(true);
+    const result = await disconnectEvolutionInstance(instance.id);
+    if (result.ok) {
+      onChanged(instances.map((item) => item.id === instance.id ? { ...item, status: "disconnected" } : item));
+      setQrCode(null);
+      setMessage("WhatsApp desconectado.");
+    } else setMessage(result.error.message);
+    setBusy(false);
+  }
+
+  return (
+    <section className="surface-card p-5 xl:col-span-2">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="grid h-9 w-9 place-items-center rounded-lg bg-lime/10 text-lime"><MessageCircle className="h-4 w-4" /></div>
+          <div>
+            <h3 className="font-display text-lg font-semibold">WhatsApp · Evolution API</h3>
+            <p className="mt-1 text-sm text-muted-foreground">Conecte pelo QR Code. Chaves técnicas ficam somente no servidor.</p>
+          </div>
+        </div>
+        <span className="rounded-full border border-lime/30 bg-lime/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-lime">
+          {instances.some((item) => item.status === "connected") ? "conectado" : "aguardando conexão"}
+        </span>
+      </div>
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+        <Input value={label} onChange={(event) => setLabel(event.target.value)} placeholder="Nome desta conexão" />
+        <Button disabled={busy || label.trim().length < 2} onClick={() => void createInstance()} type="button">
+          <Plus className="mr-2 h-4 w-4" /> Nova conexão
+        </Button>
+      </div>
+      {qrCode && <div className="mt-5 rounded-xl border border-lime/20 bg-white p-4 text-center"><img alt="QR Code para conectar o WhatsApp" className="mx-auto max-h-64" src={qrCode} /></div>}
+      <div className="mt-5 grid gap-2">
+        {instances.map((instance) => (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 p-3" key={instance.id}>
+            <div><p className="text-sm font-semibold">{instance.label}</p><p className="mt-1 text-xs text-muted-foreground">{instance.phoneNumber ?? instance.instanceName} · {instance.status}</p></div>
+            <div className="flex gap-2">
+              {instance.status !== "connected" && <Button disabled={busy} onClick={() => void reconnect(instance)} type="button" variant="outline">Exibir QR</Button>}
+              {instance.status === "connected" && <Button disabled={busy} onClick={() => void disconnect(instance)} type="button" variant="outline"><Unplug className="mr-2 h-4 w-4" /> Desconectar</Button>}
+            </div>
+          </div>
+        ))}
+        {instances.length === 0 && <p className="text-sm text-muted-foreground">Nenhum WhatsApp conectado ainda.</p>}
+      </div>
+      {message && <p className="mt-3 text-xs text-lime">{message}</p>}
+      <p className="mt-4 text-xs leading-5 text-muted-foreground">As mensagens continuam passando por elegibilidade, aprovação e auditoria antes do envio. A conexão futura do Instagram por login será criada em módulo separado.</p>
+    </section>
   );
 }
 

@@ -258,8 +258,6 @@ export type IntegrationProvider =
   | "serper"
   | "rapidapi"
   | "apify"
-  | "whatsapp_cloud"
-  | "instagram"
   | "email"
   | "asaas";
 export type Integration = {
@@ -271,6 +269,18 @@ export type Integration = {
   hasCredentials: boolean;
   lastError: string | null;
   updatedAt: string;
+};
+export type EvolutionInstance = {
+  id: string;
+  channelAccountId: string;
+  label: string;
+  instanceName: string;
+  status: "disconnected" | "connecting" | "connected" | "error";
+  phoneNumber: string | null;
+  profileName: string | null;
+  lastError: string | null;
+  connectedAt: string | null;
+  createdAt: string;
 };
 
 export class ApiUnavailableError extends Error {
@@ -733,6 +743,37 @@ export async function saveIntegration(input: {
 
 export async function removeIntegration(provider: IntegrationProvider) {
   return apiFetch<void>(`/v1/integrations/${provider}`, { method: "DELETE" });
+}
+
+export async function fetchEvolutionInstances() {
+  return apiFetch<EvolutionInstance[]>("/v1/evolution/instances");
+}
+
+export async function createEvolutionInstance(label: string) {
+  return apiFetch<EvolutionInstance>("/v1/evolution/instances", {
+    method: "POST",
+    body: JSON.stringify({ label }),
+  });
+}
+
+export async function connectEvolutionInstance(id: string) {
+  return apiFetch<{ id: string; status: string; qrCode: string | null }>(
+    `/v1/evolution/instances/${id}/connect`,
+    { method: "POST" },
+  );
+}
+
+export async function fetchEvolutionInstanceStatus(id: string) {
+  return apiFetch<{ id: string; status: EvolutionInstance["status"] }>(
+    `/v1/evolution/instances/${id}/status`,
+  );
+}
+
+export async function disconnectEvolutionInstance(id: string) {
+  return apiFetch<{ id: string; status: string }>(
+    `/v1/evolution/instances/${id}/disconnect`,
+    { method: "POST" },
+  );
 }
 
 export async function login(email: string, password: string) {
