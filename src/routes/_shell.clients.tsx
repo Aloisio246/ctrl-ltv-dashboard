@@ -56,9 +56,9 @@ function ClientsPage() {
       {
         realizedRevenue: string;
         realizedCost: string;
-        realizedLtv: number;
-        netLtv: number;
-        contractedLtv: number;
+        ltv: number;
+        received: number;
+        outstanding: number;
         monthsActive: number;
       }
     >
@@ -322,18 +322,18 @@ function ClientsPage() {
                 {clientLtv && (
                   <div className="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-lime/20 bg-lime/5 p-3 text-sm">
                     <div>
-                      <div className="text-xs text-muted-foreground">LTV recebido</div>
-                      <strong className="mt-1 block text-lime">
-                        {money(clientLtv.realizedLtv)}
+                      <div className="text-xs text-muted-foreground">LTV</div>
+                      <strong className="mt-1 block text-lime">{money(clientLtv.ltv)}</strong>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">Recebido</div>
+                      <strong className="mt-1 block">{money(clientLtv.received)}</strong>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">Em aberto</div>
+                      <strong className="mt-1 block text-amber-400">
+                        {money(clientLtv.outstanding)}
                       </strong>
-                    </div>
-                    <div>
-                      <div className="text-xs text-muted-foreground">LTV contratado</div>
-                      <strong className="mt-1 block">{money(clientLtv.contractedLtv)}</strong>
-                    </div>
-                    <div>
-                      <div className="text-xs text-muted-foreground">LTV líquido</div>
-                      <strong className="mt-1 block">{money(clientLtv.netLtv)}</strong>
                     </div>
                     <div>
                       <div className="text-xs text-muted-foreground">Meses ativos</div>
