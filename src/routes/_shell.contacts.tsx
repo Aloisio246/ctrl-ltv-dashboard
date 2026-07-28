@@ -1,6 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Building2, Globe2, Mail, MapPin, Phone, Plus, Search, UserRound } from "lucide-react";
+import {
+  Building2,
+  Globe2,
+  Mail,
+  MapPin,
+  Pencil,
+  Phone,
+  Plus,
+  Search,
+  UserRound,
+} from "lucide-react";
 import { getModule } from "@/lib/modules";
 import {
   createCompany,
@@ -9,6 +19,8 @@ import {
   fetchCompanies,
   fetchContacts,
   fetchProspects,
+  updateCompany,
+  updateContact,
   type Company,
   type Contact,
   type Prospect,
@@ -21,7 +33,9 @@ import { Input } from "@/components/ui/input";
 const mod = getModule("contacts")!;
 
 export const Route = createFileRoute("/_shell/contacts")({
-  head: () => ({ meta: [{ title: `${mod.label} · Ctrl LTV` }, { name: "description", content: mod.description }] }),
+  head: () => ({
+    meta: [{ title: `${mod.label} · Ctrl LTV` }, { name: "description", content: mod.description }],
+  }),
   component: ContactsPage,
 });
 
@@ -46,6 +60,7 @@ function ContactsPage() {
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
   const [contactName, setContactName] = useState("");
   const [roleTitle, setRoleTitle] = useState("");
@@ -91,6 +106,7 @@ function ContactsPage() {
   );
 
   function resetForm() {
+    setEditingContact(null);
     setSelectedCompanyId("");
     setContactName("");
     setRoleTitle("");
@@ -101,6 +117,22 @@ function ContactsPage() {
     setCompanyPhone("");
     setCity("");
     setState("");
+  }
+
+  function startEditing(contact: Contact) {
+    setEditingContact(contact);
+    setSelectedCompanyId(contact.companyId);
+    setContactName(contact.name);
+    setRoleTitle(contact.roleTitle ?? "");
+    setEmail(contact.email ?? "");
+    setPhone(contact.phone ?? "");
+    setCompanyName(contact.companyName);
+    setCompanyWebsite(contact.companyWebsite ?? "");
+    setCompanyPhone(contact.companyPhone ?? "");
+    setCity(contact.companyCity ?? "");
+    setState(contact.companyState ?? "");
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
@@ -117,6 +149,38 @@ function ContactsPage() {
     setError(null);
 
     let companyId = selectedCompanyId;
+    if (editingContact) {
+      const companyResult = await updateCompany(editingContact.companyId, {
+        name: companyName.trim(),
+        normalizedName: normalizeCompanyName(companyName),
+        website: normalizeWebsite(companyWebsite) ?? "",
+        phone: companyPhone.trim(),
+        city: city.trim(),
+        state: state.trim(),
+      });
+      if (!companyResult.ok) {
+        setError(companyResult.error.message);
+        setSaving(false);
+        return;
+      }
+      const contactResult = await updateContact(editingContact.id, {
+        companyId,
+        name: contactName.trim(),
+        roleTitle: roleTitle.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+      });
+      if (!contactResult.ok) {
+        setError(contactResult.error.message);
+        setSaving(false);
+        return;
+      }
+      setShowForm(false);
+      resetForm();
+      await load();
+      setSaving(false);
+      return;
+    }
     if (!companyId) {
       const companyResult = await createCompany({
         name: companyName.trim(),
@@ -177,7 +241,8 @@ function ContactsPage() {
           </div>
           <h1 className="mt-2 font-display text-3xl font-bold">{mod.label}</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Cadastre pessoas junto com suas empresas e prepare cada relacionamento para virar cliente.
+            Cadastre pessoas junto com suas empresas e prepare cada relacionamento para virar
+            cliente.
           </p>
         </div>
         <Button onClick={() => setShowForm((current) => !current)}>
@@ -189,10 +254,12 @@ function ContactsPage() {
         <form className="surface-card grid gap-4 p-5 md:grid-cols-2" onSubmit={handleCreate}>
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 font-display text-lg font-semibold">
-              <Building2 className="h-4 w-4 text-lime" /> Empresa e contato
+              <Building2 className="h-4 w-4 text-lime" />{" "}
+              {editingContact ? "Editar empresa e contato" : "Empresa e contato"}
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              A empresa fica vinculada ao contato e poderá avançar para Prospects, Pipeline e Clientes.
+              A empresa fica vinculada ao contato e poderá avançar para Prospects, Pipeline e
+              Clientes.
             </p>
           </div>
           <label className="space-y-2 text-sm font-medium md:col-span-2">
@@ -206,91 +273,205 @@ function ContactsPage() {
               options={companies.map((company) => ({ value: company.id, label: company.name }))}
             />
           </label>
-          {!selectedCompanyId && (
+          {(!selectedCompanyId || editingContact) && (
             <>
               <label className="space-y-2 text-sm font-medium">
                 Nome da empresa
-                <Input className="mt-2" value={companyName} onChange={(event) => setCompanyName(event.target.value)} required />
+                <Input
+                  className="mt-2"
+                  value={companyName}
+                  onChange={(event) => setCompanyName(event.target.value)}
+                  required
+                />
               </label>
               <label className="space-y-2 text-sm font-medium">
                 Site da empresa
-                <Input className="mt-2" value={companyWebsite} onChange={(event) => setCompanyWebsite(event.target.value)} placeholder="empresa.com.br" />
+                <Input
+                  className="mt-2"
+                  value={companyWebsite}
+                  onChange={(event) => setCompanyWebsite(event.target.value)}
+                  placeholder="empresa.com.br"
+                />
               </label>
               <label className="space-y-2 text-sm font-medium">
                 Telefone da empresa
-                <Input className="mt-2" value={companyPhone} onChange={(event) => setCompanyPhone(event.target.value)} placeholder="(65) 99999-9999" />
+                <Input
+                  className="mt-2"
+                  value={companyPhone}
+                  onChange={(event) => setCompanyPhone(event.target.value)}
+                  placeholder="(65) 99999-9999"
+                />
               </label>
               <label className="space-y-2 text-sm font-medium">
                 Cidade
-                <Input className="mt-2" value={city} onChange={(event) => setCity(event.target.value)} />
+                <Input
+                  className="mt-2"
+                  value={city}
+                  onChange={(event) => setCity(event.target.value)}
+                />
               </label>
               <label className="space-y-2 text-sm font-medium">
                 Estado
-                <Input className="mt-2" value={state} onChange={(event) => setState(event.target.value)} placeholder="MT" />
+                <Input
+                  className="mt-2"
+                  value={state}
+                  onChange={(event) => setState(event.target.value)}
+                  placeholder="MT"
+                />
               </label>
             </>
           )}
           <label className="space-y-2 text-sm font-medium">
             Nome do contato
-            <Input className="mt-2" value={contactName} onChange={(event) => setContactName(event.target.value)} required />
+            <Input
+              className="mt-2"
+              value={contactName}
+              onChange={(event) => setContactName(event.target.value)}
+              required
+            />
           </label>
           <label className="space-y-2 text-sm font-medium">
             Cargo ou função
-            <Input className="mt-2" value={roleTitle} onChange={(event) => setRoleTitle(event.target.value)} placeholder="Proprietário, comercial…" />
+            <Input
+              className="mt-2"
+              value={roleTitle}
+              onChange={(event) => setRoleTitle(event.target.value)}
+              placeholder="Proprietário, comercial…"
+            />
           </label>
           <label className="space-y-2 text-sm font-medium">
             E-mail
-            <Input className="mt-2" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+            <Input
+              className="mt-2"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
           </label>
           <label className="space-y-2 text-sm font-medium">
             Telefone ou WhatsApp
-            <Input className="mt-2" value={phone} onChange={(event) => setPhone(event.target.value)} />
+            <Input
+              className="mt-2"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+            />
           </label>
           {error && <p className="text-sm text-destructive md:col-span-2">{error}</p>}
           <div className="flex gap-2 md:col-span-2">
-            <Button disabled={saving} type="submit">{saving ? "Salvando…" : "Salvar contato"}</Button>
-            <Button type="button" variant="ghost" onClick={() => { setShowForm(false); resetForm(); }}>Cancelar</Button>
+            <Button disabled={saving} type="submit">
+              {saving ? "Salvando…" : editingContact ? "Salvar alterações" : "Salvar contato"}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setShowForm(false);
+                resetForm();
+              }}
+            >
+              Cancelar
+            </Button>
           </div>
         </form>
       )}
 
       <div className="surface-card relative p-4">
         <Search className="pointer-events-none absolute left-7 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar contato, empresa ou cidade" className="pl-9" />
+        <Input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Buscar contato, empresa ou cidade"
+          className="pl-9"
+        />
       </div>
 
       {error && !showForm && <ApiUnavailableState message={error} />}
-      {!error && visible.length === 0 && <EmptyState title="Nenhum contato cadastrado" description="Cadastre o primeiro contato com os dados da empresa para iniciar seu relacionamento comercial." />}
+      {!error && visible.length === 0 && (
+        <EmptyState
+          title="Nenhum contato cadastrado"
+          description="Cadastre o primeiro contato com os dados da empresa para iniciar seu relacionamento comercial."
+        />
+      )}
       {visible.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {visible.map((contact) => (
-            <article key={contact.id} className="surface-card p-5 transition-transform hover:-translate-y-0.5">
+            <article
+              key={contact.id}
+              className="surface-card p-5 transition-transform hover:-translate-y-0.5"
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h2 className="truncate font-display text-lg font-semibold">{contact.name}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">{contact.roleTitle ?? "Contato comercial"}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {contact.roleTitle ?? "Contato comercial"}
+                  </p>
                 </div>
-                <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${contact.clientId ? "border-sky-300/25 bg-sky-300/10 text-sky-200" : "border-lime/25 bg-lime/10 text-lime"}`}>
+                <span
+                  className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${contact.clientId ? "border-sky-300/25 bg-sky-300/10 text-sky-200" : "border-lime/25 bg-lime/10 text-lime"}`}
+                >
                   {contact.clientId ? "cliente atual" : "potencial cliente"}
                 </span>
               </div>
               <div className="mt-5 rounded-lg border border-border/60 bg-surface/50 p-3">
-                <div className="flex items-center gap-2 text-sm font-semibold"><Building2 className="h-4 w-4 text-lime" /> {contact.companyName}</div>
-                {(contact.companyCity || contact.companyState) && <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><MapPin className="h-3.5 w-3.5" /> {[contact.companyCity, contact.companyState].filter(Boolean).join(" · ")}</div>}
-                {contact.companyWebsite && <a className="mt-2 flex items-center gap-2 truncate text-xs text-lime hover:underline" href={contact.companyWebsite} target="_blank" rel="noreferrer"><Globe2 className="h-3.5 w-3.5 shrink-0" /> {contact.companyWebsite.replace(/^https?:\/\//, "")}</a>}
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <Building2 className="h-4 w-4 text-lime" /> {contact.companyName}
+                </div>
+                {(contact.companyCity || contact.companyState) && (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5" />{" "}
+                    {[contact.companyCity, contact.companyState].filter(Boolean).join(" · ")}
+                  </div>
+                )}
+                {contact.companyWebsite && (
+                  <a
+                    className="mt-2 flex items-center gap-2 truncate text-xs text-lime hover:underline"
+                    href={contact.companyWebsite}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Globe2 className="h-3.5 w-3.5 shrink-0" />{" "}
+                    {contact.companyWebsite.replace(/^https?:\/\//, "")}
+                  </a>
+                )}
               </div>
               <div className="mt-4 space-y-2 text-xs text-muted-foreground">
-                {contact.email && <div className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {contact.email}</div>}
-                {contact.phone && <div className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {contact.phone}</div>}
+                {contact.email && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-3.5 w-3.5" /> {contact.email}
+                  </div>
+                )}
+                {contact.phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-3.5 w-3.5" /> {contact.phone}
+                  </div>
+                )}
               </div>
               <Button
                 size="sm"
                 variant="outline"
                 className="mt-5 w-full"
-                disabled={Boolean(contact.clientId) || prospectCompanyIds.has(contact.companyId) || busyProspect === contact.id}
+                disabled={
+                  Boolean(contact.clientId) ||
+                  prospectCompanyIds.has(contact.companyId) ||
+                  busyProspect === contact.id
+                }
                 onClick={() => void promoteToProspect(contact)}
               >
-                {contact.clientId ? "Cliente atual" : prospectCompanyIds.has(contact.companyId) ? "Já está em Prospects" : busyProspect === contact.id ? "Enviando…" : "Enviar para Prospects"}
+                {contact.clientId
+                  ? "Cliente atual"
+                  : prospectCompanyIds.has(contact.companyId)
+                    ? "Já está em Prospects"
+                    : busyProspect === contact.id
+                      ? "Enviando…"
+                      : "Enviar para Prospects"}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="mt-2 w-full"
+                onClick={() => startEditing(contact)}
+              >
+                <Pencil className="h-4 w-4" /> Editar contato e empresa
               </Button>
             </article>
           ))}
