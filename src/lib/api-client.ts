@@ -550,6 +550,10 @@ export async function createClient(input: {
   status?: Client["status"];
   startedAt?: string;
   notes?: string;
+  monthlyValue?: number;
+  billingDay?: number;
+  setupFee?: number;
+  currency?: string;
 }) {
   return apiFetch<Client>("/v1/clients", { method: "POST", body: JSON.stringify(input) });
 }

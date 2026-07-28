@@ -46,6 +46,8 @@ function ClientsPage() {
   const [companyId, setCompanyId] = useState("");
   const [status, setStatus] = useState<Client["status"]>("onboarding");
   const [startedAt, setStartedAt] = useState("");
+  const [monthlyValue, setMonthlyValue] = useState("");
+  const [billingDay, setBillingDay] = useState("");
   const [notes, setNotes] = useState("");
   const [ltvLoading, setLtvLoading] = useState<string | null>(null);
   const [ltv, setLtv] = useState<
@@ -95,6 +97,14 @@ function ClientsPage() {
       setFormError("Selecione uma empresa para criar o cliente.");
       return;
     }
+    if (status === "active" && (!monthlyValue || !billingDay)) {
+      setFormError("Informe a mensalidade e o dia de vencimento do cliente ativo.");
+      return;
+    }
+    if ((monthlyValue && !billingDay) || (!monthlyValue && billingDay)) {
+      setFormError("Mensalidade e dia de vencimento devem ser informados juntos.");
+      return;
+    }
     setSaving(true);
     setFormError(null);
     const result = await createClient({
@@ -102,6 +112,9 @@ function ClientsPage() {
       status,
       startedAt: toIsoDate(startedAt),
       notes: notes.trim() || undefined,
+      monthlyValue: monthlyValue ? Number(monthlyValue) : undefined,
+      billingDay: billingDay ? Number(billingDay) : undefined,
+      currency: "BRL",
     });
     if (!result.ok) setFormError(result.error.message);
     else {
@@ -109,6 +122,8 @@ function ClientsPage() {
       setCompanyId("");
       setNotes("");
       setStartedAt("");
+      setMonthlyValue("");
+      setBillingDay("");
       await load();
     }
     setSaving(false);
@@ -187,6 +202,40 @@ function ClientsPage() {
               value={startedAt}
               onChange={(event) => setStartedAt(event.target.value)}
             />
+          </label>
+          <label className="space-y-2 text-sm font-medium">
+            Mensalidade {status === "active" && <span className="text-lime">*</span>}
+            <Input
+              className="mt-2"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputMode="decimal"
+              value={monthlyValue}
+              onChange={(event) => setMonthlyValue(event.target.value)}
+              placeholder="Ex.: 2500,00"
+              required={status === "active"}
+            />
+            <span className="text-xs font-normal text-muted-foreground">
+              Valor recorrente que será incluído no MRR.
+            </span>
+          </label>
+          <label className="space-y-2 text-sm font-medium">
+            Dia do vencimento {status === "active" && <span className="text-lime">*</span>}
+            <Input
+              className="mt-2"
+              type="number"
+              min="1"
+              max="31"
+              inputMode="numeric"
+              value={billingDay}
+              onChange={(event) => setBillingDay(event.target.value)}
+              placeholder="Ex.: 10"
+              required={status === "active"}
+            />
+            <span className="text-xs font-normal text-muted-foreground">
+              Usado para cobranças e lembretes mensais.
+            </span>
           </label>
           <label className="space-y-2 text-sm font-medium">
             Notas
