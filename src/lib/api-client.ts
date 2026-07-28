@@ -615,6 +615,8 @@ export async function fetchClientLtv(id: string) {
     mrr: string;
     monthsActive: number;
     realizedLtv: number;
+    netLtv: number;
+    contractedLtv: number;
   }>(`/v1/metrics/clients/${id}/ltv`);
 }
 export async function fetchConversations() {

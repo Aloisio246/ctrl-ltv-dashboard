@@ -53,7 +53,14 @@ function ClientsPage() {
   const [ltv, setLtv] = useState<
     Record<
       string,
-      { realizedRevenue: string; realizedCost: string; realizedLtv: number; monthsActive: number }
+      {
+        realizedRevenue: string;
+        realizedCost: string;
+        realizedLtv: number;
+        netLtv: number;
+        contractedLtv: number;
+        monthsActive: number;
+      }
     >
   >({});
 
@@ -315,10 +322,18 @@ function ClientsPage() {
                 {clientLtv && (
                   <div className="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-lime/20 bg-lime/5 p-3 text-sm">
                     <div>
-                      <div className="text-xs text-muted-foreground">LTV realizado</div>
+                      <div className="text-xs text-muted-foreground">LTV recebido</div>
                       <strong className="mt-1 block text-lime">
                         {money(clientLtv.realizedLtv)}
                       </strong>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">LTV contratado</div>
+                      <strong className="mt-1 block">{money(clientLtv.contractedLtv)}</strong>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">LTV líquido</div>
+                      <strong className="mt-1 block">{money(clientLtv.netLtv)}</strong>
                     </div>
                     <div>
                       <div className="text-xs text-muted-foreground">Meses ativos</div>
