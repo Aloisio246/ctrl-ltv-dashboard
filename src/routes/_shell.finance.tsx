@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { AppSelect } from "@/components/ui/app-select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { toIsoDate } from "@/lib/format";
 
 const mod = getModule("finance")!;
 const defaultReminderTemplate = "Olá, {{nome}}! A cobrança da {{empresa}} no valor de {{valor}} vence hoje, {{data}}. Acesse o link para pagamento: {{link_pagamento}}";
@@ -37,10 +38,6 @@ const defaultReminderSettings: BillingReminderSettings = {
   paymentProvider: "manual",
   template: defaultReminderTemplate,
 };
-function toIsoDate(value: string) {
-  return value ? new Date(`${value}T00:00:00`).toISOString() : undefined;
-}
-
 export const Route = createFileRoute("/_shell/finance")({
   head: () => ({ meta: [{ title: `${mod.label} · Ctrl LTV` }] }),
   component: FinancePage,

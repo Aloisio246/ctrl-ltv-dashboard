@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { AppSelect } from "@/components/ui/app-select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { toIsoDate } from "@/lib/format";
 
 const mod = getModule("clients")!;
 const statuses: Array<{ value: Client["status"]; label: string }> = [
@@ -25,10 +26,6 @@ const statuses: Array<{ value: Client["status"]; label: string }> = [
   { value: "paused", label: "Pausado" },
   { value: "at_risk", label: "Em risco" },
 ];
-
-function toIsoDate(value: string) {
-  return value ? new Date(`${value}T00:00:00`).toISOString() : undefined;
-}
 
 export const Route = createFileRoute("/_shell/clients")({
   head: () => ({
@@ -49,12 +46,21 @@ function ClientsPage() {
   const [companyId, setCompanyId] = useState("");
   const [status, setStatus] = useState<Client["status"]>("onboarding");
   const [startedAt, setStartedAt] = useState("");
+  const [monthlyValue, setMonthlyValue] = useState("");
+  const [billingDay, setBillingDay] = useState("");
   const [notes, setNotes] = useState("");
   const [ltvLoading, setLtvLoading] = useState<string | null>(null);
   const [ltv, setLtv] = useState<
     Record<
       string,
-      { realizedRevenue: string; realizedCost: string; realizedLtv: number; monthsActive: number }
+      {
+        realizedRevenue: string;
+        realizedCost: string;
+        realizedLtv: number;
+        netLtv: number;
+        contractedLtv: number;
+        monthsActive: number;
+      }
     >
   >({});
 
@@ -98,6 +104,14 @@ function ClientsPage() {
       setFormError("Selecione uma empresa para criar o cliente.");
       return;
     }
+    if (status === "active" && (!monthlyValue || !billingDay)) {
+      setFormError("Informe a mensalidade e o dia de vencimento do cliente ativo.");
+      return;
+    }
+    if ((monthlyValue && !billingDay) || (!monthlyValue && billingDay)) {
+      setFormError("Mensalidade e dia de vencimento devem ser informados juntos.");
+      return;
+    }
     setSaving(true);
     setFormError(null);
     const result = await createClient({
@@ -105,6 +119,9 @@ function ClientsPage() {
       status,
       startedAt: toIsoDate(startedAt),
       notes: notes.trim() || undefined,
+      monthlyValue: monthlyValue ? Number(monthlyValue) : undefined,
+      billingDay: billingDay ? Number(billingDay) : undefined,
+      currency: "BRL",
     });
     if (!result.ok) setFormError(result.error.message);
     else {
@@ -112,6 +129,8 @@ function ClientsPage() {
       setCompanyId("");
       setNotes("");
       setStartedAt("");
+      setMonthlyValue("");
+      setBillingDay("");
       await load();
     }
     setSaving(false);
@@ -192,6 +211,40 @@ function ClientsPage() {
             />
           </label>
           <label className="space-y-2 text-sm font-medium">
+            Mensalidade {status === "active" && <span className="text-lime">*</span>}
+            <Input
+              className="mt-2"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputMode="decimal"
+              value={monthlyValue}
+              onChange={(event) => setMonthlyValue(event.target.value)}
+              placeholder="Ex.: 2500,00"
+              required={status === "active"}
+            />
+            <span className="text-xs font-normal text-muted-foreground">
+              Valor recorrente que será incluído no MRR.
+            </span>
+          </label>
+          <label className="space-y-2 text-sm font-medium">
+            Dia do vencimento {status === "active" && <span className="text-lime">*</span>}
+            <Input
+              className="mt-2"
+              type="number"
+              min="1"
+              max="31"
+              inputMode="numeric"
+              value={billingDay}
+              onChange={(event) => setBillingDay(event.target.value)}
+              placeholder="Ex.: 10"
+              required={status === "active"}
+            />
+            <span className="text-xs font-normal text-muted-foreground">
+              Usado para cobranças e lembretes mensais.
+            </span>
+          </label>
+          <label className="space-y-2 text-sm font-medium">
             Notas
             <Textarea
               className="mt-2"
@@ -269,10 +322,18 @@ function ClientsPage() {
                 {clientLtv && (
                   <div className="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-lime/20 bg-lime/5 p-3 text-sm">
                     <div>
-                      <div className="text-xs text-muted-foreground">LTV realizado</div>
+                      <div className="text-xs text-muted-foreground">LTV recebido</div>
                       <strong className="mt-1 block text-lime">
                         {money(clientLtv.realizedLtv)}
                       </strong>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">LTV contratado</div>
+                      <strong className="mt-1 block">{money(clientLtv.contractedLtv)}</strong>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">LTV líquido</div>
+                      <strong className="mt-1 block">{money(clientLtv.netLtv)}</strong>
                     </div>
                     <div>
                       <div className="text-xs text-muted-foreground">Meses ativos</div>
