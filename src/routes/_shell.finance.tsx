@@ -9,12 +9,14 @@ import {
   createPayment,
   fetchBillingReminderSettings,
   fetchClients,
+  fetchCompanies,
   fetchContracts,
   fetchInvoices,
   fetchMetricsSummary,
   saveBillingReminderSettings,
   type BillingReminderSettings,
   type Client,
+  type Company,
   type Contract,
   type Invoice,
   type MetricsSummary,
@@ -46,6 +48,7 @@ export const Route = createFileRoute("/_shell/finance")({
 function FinancePage() {
   const [metrics, setMetrics] = useState<MetricsSummary | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -75,20 +78,22 @@ function FinancePage() {
   const [reminderSaving, setReminderSaving] = useState(false);
 
   async function load() {
-    const [metricResult, clientResult, contractResult, invoiceResult, reminderResult] = await Promise.all([
+    const [metricResult, clientResult, companyResult, contractResult, invoiceResult, reminderResult] = await Promise.all([
       fetchMetricsSummary(),
       fetchClients(),
+      fetchCompanies(),
       fetchContracts(),
       fetchInvoices(),
       fetchBillingReminderSettings(),
     ]);
-    if (!metricResult.ok || !clientResult.ok || !contractResult.ok || !invoiceResult.ok) {
+    if (!metricResult.ok || !clientResult.ok || !companyResult.ok || !contractResult.ok || !invoiceResult.ok) {
       setError("Não foi possível carregar o financeiro local.");
       return;
     }
     setError(null);
     setMetrics(metricResult.data);
     setClients(clientResult.data);
+    setCompanies(companyResult.data);
     setContracts(contractResult.data);
     setInvoices(invoiceResult.data);
     if (reminderResult.ok) setReminderSettings(reminderResult.data.settings);
@@ -101,6 +106,14 @@ function FinancePage() {
     () => new Map(clients.map((client) => [client.id, client])),
     [clients],
   );
+  const companiesById = useMemo(
+    () => new Map(companies.map((company) => [company.id, company])),
+    [companies],
+  );
+  const clientName = (clientId: string) => {
+    const client = clientsById.get(clientId);
+    return companiesById.get(client?.companyId ?? "")?.name ?? "Cliente sem empresa";
+  };
   const money = (value: string | number) =>
     Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -339,7 +352,7 @@ function FinancePage() {
                   placeholder="Selecione um cliente"
                   options={clients.map((client) => ({
                     value: client.id,
-                    label: `${client.id.slice(0, 8)} · ${client.status}`,
+                    label: `${clientName(client.id)} · ${client.status}`,
                   }))}
                   required
                 />
@@ -409,7 +422,7 @@ function FinancePage() {
                   placeholder="Selecione um cliente"
                   options={clients.map((client) => ({
                     value: client.id,
-                    label: `${client.id.slice(0, 8)} · ${client.status}`,
+                    label: `${clientName(client.id)} · ${client.status}`,
                   }))}
                   required
                 />
@@ -426,7 +439,7 @@ function FinancePage() {
                     .filter((contract) => !invoiceClient || contract.clientId === invoiceClient)
                     .map((contract) => ({
                       value: contract.id,
-                      label: `${money(contract.monthlyValue)} / mês`,
+                      label: `${clientName(contract.clientId)} · ${money(contract.monthlyValue)} / mês`,
                     }))}
                 />
               </label>
@@ -582,9 +595,7 @@ function FinancePage() {
                 className="flex flex-col gap-2 rounded-lg border border-border/50 bg-surface/40 p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
               >
                 <span>
-                  {clientsById.get(contract.clientId)?.id.slice(0, 8) ??
-                    contract.clientId.slice(0, 8)}{" "}
-                  · <span className="capitalize">{contract.status}</span>
+                  {clientName(contract.clientId)} · <span className="capitalize">{contract.status}</span>
                 </span>
                 <strong>{money(contract.monthlyValue)} / mês{contract.billingDay ? ` · dia ${contract.billingDay}` : ""}</strong>
               </div>
@@ -606,7 +617,8 @@ function FinancePage() {
               >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <span>
-                    {invoice.number} · <span className="capitalize">{invoice.status}</span>
+                    {clientName(invoice.clientId)} · {invoice.number} ·{" "}
+                    <span className="capitalize">{invoice.status}</span>
                   </span>
                   <strong>{money(invoice.subtotal)}</strong>
                 </div>
