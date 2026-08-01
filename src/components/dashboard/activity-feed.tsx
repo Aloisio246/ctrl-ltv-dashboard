@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
-import { activity, type ActivityEvent } from "@/lib/mock/dashboard";
+import type { DashboardSummary } from "@/lib/api-client";
 import { motion as m, fadeUp } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
+type ActivityEvent = DashboardSummary["recentActivity"][number];
 const toneDot: Record<ActivityEvent["tone"], string> = {
   neutral: "bg-muted-foreground",
   positive: "bg-lime",
@@ -10,7 +11,16 @@ const toneDot: Record<ActivityEvent["tone"], string> = {
   negative: "bg-danger",
 };
 
-export function ActivityFeed() {
+function relativeTime(value: string) {
+  const minutes = Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 60_000));
+  if (minutes < 1) return "agora";
+  if (minutes < 60) return `há ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `há ${hours} h`;
+  return new Date(value).toLocaleDateString("pt-BR");
+}
+
+export function ActivityFeed({ data: activity }: { data: DashboardSummary["recentActivity"] }) {
   return (
     <motion.section
       initial={{ opacity: 0, y: 12 }}
@@ -28,6 +38,7 @@ export function ActivityFeed() {
       </div>
 
       <ol className="relative flex flex-col gap-4 pl-4">
+        {activity.length === 0 && <li className="text-sm text-muted-foreground">Nenhuma atividade registrada.</li>}
         <span className="pointer-events-none absolute left-[7px] top-1 bottom-1 w-px bg-border/70" />
         {activity.map((event, i) => (
           <motion.li
@@ -53,7 +64,7 @@ export function ActivityFeed() {
               <span className="text-muted-foreground">{event.action}</span>{" "}
               <span className="text-foreground">{event.target}</span>
             </div>
-            <div className="text-[11px] text-muted-foreground">{event.at}</div>
+            <div className="text-[11px] text-muted-foreground">{relativeTime(event.createdAt)}</div>
           </motion.li>
         ))}
       </ol>

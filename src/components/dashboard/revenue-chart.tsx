@@ -1,10 +1,14 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { motion } from "framer-motion";
-import { revenueSeries } from "@/lib/mock/dashboard";
 import { brl } from "@/lib/format";
 import { motion as m } from "@/lib/motion";
 
-export function RevenueChart() {
+export function RevenueChart({ data }: { data: Array<{ month: string; mrr: string | number; revenue: string | number }> }) {
+  const revenueSeries = data.map((item) => ({
+    month: new Intl.DateTimeFormat("pt-BR", { month: "short" }).format(new Date(`${item.month}-01T12:00:00`)).replace(".", ""),
+    mrr: Number(item.mrr),
+    revenue: Number(item.revenue),
+  }));
   return (
     <motion.section
       initial={{ opacity: 0, y: 12 }}
@@ -32,6 +36,8 @@ export function RevenueChart() {
       </div>
 
       <div className="h-64 md:h-72">
+        {revenueSeries.length === 0 && <div className="grid h-full place-items-center text-sm text-muted-foreground">Sem histórico financeiro para o período.</div>}
+        {revenueSeries.length > 0 && (
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={revenueSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <defs>
@@ -85,6 +91,7 @@ export function RevenueChart() {
             />
           </AreaChart>
         </ResponsiveContainer>
+        )}
       </div>
     </motion.section>
   );
