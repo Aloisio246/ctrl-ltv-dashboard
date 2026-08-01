@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
-import { health, type HealthDomain } from "@/lib/mock/dashboard";
+import type { DashboardSummary } from "@/lib/api-client";
 import { motion as m, fadeUp } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
+type HealthDomain = DashboardSummary["operationsHealth"][number] & { status: "healthy" | "attention" | "at_risk" | "critical" };
 const statusMeta: Record<HealthDomain["status"], { label: string; tone: string; bar: string }> = {
   healthy: { label: "Saudável", tone: "text-lime ring-lime/25 bg-lime/10", bar: "bg-lime" },
   attention: { label: "Atenção", tone: "text-warning ring-warning/25 bg-warning/10", bar: "bg-warning" },
@@ -10,7 +11,14 @@ const statusMeta: Record<HealthDomain["status"], { label: string; tone: string; 
   critical: { label: "Crítico", tone: "text-danger ring-danger/25 bg-danger/10", bar: "bg-danger" },
 };
 
-export function OperationsHealth() {
+function statusFor(score: number): HealthDomain["status"] {
+  if (score >= 80) return "healthy";
+  if (score >= 60) return "attention";
+  if (score >= 40) return "at_risk";
+  return "critical";
+}
+
+export function OperationsHealth({ data: health }: { data: DashboardSummary["operationsHealth"] }) {
   return (
     <motion.section
       initial={{ opacity: 0, y: 12 }}
@@ -31,7 +39,8 @@ export function OperationsHealth() {
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {health.map((d, i) => {
-          const meta = statusMeta[d.status];
+          const status = statusFor(d.score);
+          const meta = statusMeta[status];
           return (
             <motion.article
               key={d.key}
@@ -50,17 +59,17 @@ export function OperationsHealth() {
                   {d.label}
                 </span>
                 <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1", meta.tone)}>
-                  {meta.label}
+                  {d.available ? meta.label : "Sem dados"}
                 </span>
               </div>
               <div className="mt-3 flex items-end justify-between">
-                <span className="font-display text-3xl font-bold tracking-tight">{d.score}</span>
-                <span className="text-[11px] text-muted-foreground">/ 100</span>
+                <span className="font-display text-3xl font-bold tracking-tight">{d.available ? Math.round(d.score) : "—"}</span>
+                {d.available && <span className="text-[11px] text-muted-foreground">/ 100</span>}
               </div>
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-2">
                 <motion.div
                   initial={{ width: 0 }}
-                  animate={{ width: `${d.score}%` }}
+                  animate={{ width: `${d.available ? d.score : 0}%` }}
                   transition={{ duration: 0.9, ease: m.ease.enter, delay: 0.4 + i * 0.06 }}
                   className={cn("h-full rounded-full", meta.bar)}
                 />

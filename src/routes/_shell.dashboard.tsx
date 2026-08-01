@@ -7,7 +7,7 @@ import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { PrioritiesPanel } from "@/components/dashboard/priorities-panel";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { OperationsHealth } from "@/components/dashboard/operations-health";
-import { ChevronDown, CalendarRange, Loader2 } from "lucide-react";
+import { CalendarRange, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { API_BASE_URL, fetchDashboardSummary, type DashboardSummary } from "@/lib/api-client";
 import type { JourneyStage, MetricCard } from "@/lib/mock/dashboard";
@@ -35,14 +35,16 @@ export const Route = createFileRoute("/_shell/dashboard")({
 function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(Boolean(API_BASE_URL));
+  const [periodDays, setPeriodDays] = useState(30);
 
   useEffect(() => {
     if (!API_BASE_URL) return;
-    fetchDashboardSummary().then((result) => {
+    setLoading(true);
+    fetchDashboardSummary(periodDays).then((result) => {
       if (result.ok) setSummary(result.data);
       setLoading(false);
     });
-  }, []);
+  }, [periodDays]);
 
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-6">
@@ -63,26 +65,26 @@ function DashboardPage() {
             Como está a jornada de aquisição, receita e retenção agora.
           </p>
         </div>
-        <PeriodFilter />
+        <PeriodFilter value={periodDays} onChange={setPeriodDays} />
       </motion.header>
 
       {loading && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Carregando dados…</div>}
-      <JourneyRail data={summary ? toJourney(summary) : undefined} />
+      <JourneyRail data={summary ? toJourney(summary) : []} />
 
-      <ExecutiveCards data={summary ? toMetrics(summary) : undefined} />
+      <ExecutiveCards data={summary ? toMetrics(summary) : []} />
 
       <div className="grid gap-4 xl:grid-cols-3">
         <div className="xl:col-span-2">
-          <RevenueChart />
+          <RevenueChart data={summary?.revenueSeries ?? []} />
         </div>
-        <PrioritiesPanel />
+        <PrioritiesPanel data={summary?.priorities ?? []} />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
         <div className="xl:col-span-2">
-          <OperationsHealth />
+          <OperationsHealth data={summary?.operationsHealth ?? []} />
         </div>
-        <ActivityFeed />
+        <ActivityFeed data={summary?.recentActivity ?? []} />
       </div>
     </div>
   );
@@ -115,12 +117,21 @@ function toJourney(summary: DashboardSummary): JourneyStage[] {
   ];
 }
 
-function PeriodFilter() {
+function PeriodFilter({ value, onChange }: { value: number; onChange: (value: number) => void }) {
   return (
-    <button className="flex shrink-0 items-center gap-2 rounded-lg border border-border/70 bg-surface/70 px-3 py-2 text-sm text-foreground transition-colors hover:border-lime/40">
+    <label className="flex shrink-0 items-center gap-2 rounded-lg border border-border/70 bg-surface/70 px-3 py-2 text-sm text-foreground transition-colors hover:border-lime/40">
       <CalendarRange className="h-4 w-4 text-lime" />
-      <span>Últimos 30 dias</span>
-      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-    </button>
+      <span className="sr-only">Período do dashboard</span>
+      <select
+        aria-label="Período do dashboard"
+        className="cursor-pointer border-0 bg-transparent text-sm text-foreground outline-none"
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+      >
+        <option value={30}>Últimos 30 dias</option>
+        <option value={90}>Últimos 90 dias</option>
+        <option value={365}>Últimos 12 meses</option>
+      </select>
+    </label>
   );
 }

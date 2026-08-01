@@ -19,6 +19,30 @@ export type DashboardSummary = {
   capture: { pendingRecords: number; approvedRecords: number; totalRecords: number };
   inbox: { unreadMessages: number };
   approvals: { pendingItems: number };
+  revenueSeries: Array<{ month: string; mrr: string | number; revenue: string | number }>;
+  priorities: Array<{
+    id: string;
+    kind: "followup" | "approval" | "risk";
+    title: string;
+    subtitle: string;
+    dueAt: string;
+    severity: "medium" | "high";
+  }>;
+  recentActivity: Array<{
+    id: string;
+    actor: string;
+    action: string;
+    target: string;
+    createdAt: string;
+    tone: "neutral" | "positive" | "warning" | "negative";
+  }>;
+  operationsHealth: Array<{
+    key: "capture" | "pipeline" | "finance" | "retention";
+    label: string;
+    available: boolean;
+    score: number;
+    headline: string;
+  }>;
 };
 export type Activity = {
   id: string;
@@ -162,6 +186,7 @@ export type Invoice = {
   paymentProvider?: string | null;
   providerPaymentId?: string | null;
   paymentUrl?: string | null;
+  billingPeriod?: string | null;
 };
 export type BillingReminderSettings = {
   id: string | null;
@@ -390,8 +415,8 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   }
 }
 
-export async function fetchDashboardSummary() {
-  return apiFetch<DashboardSummary>("/v1/dashboard/summary");
+export async function fetchDashboardSummary(periodDays = 30) {
+  return apiFetch<DashboardSummary>(`/v1/dashboard/summary?periodDays=${periodDays}`);
 }
 export async function fetchActivities() {
   return apiFetch<Activity[]>("/v1/activities?limit=50&offset=0");

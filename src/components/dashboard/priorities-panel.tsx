@@ -1,23 +1,31 @@
 import { motion } from "framer-motion";
-import { priorities, type Priority } from "@/lib/mock/dashboard";
+import type { DashboardSummary } from "@/lib/api-client";
 import { motion as m, fadeUp } from "@/lib/motion";
 import { AlarmClock, ShieldCheck, CalendarCheck, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+type Priority = DashboardSummary["priorities"][number];
 const kindMeta: Record<Priority["kind"], { icon: React.ComponentType<{ className?: string }>; label: string }> = {
   followup: { icon: AlarmClock, label: "Follow-up" },
   approval: { icon: ShieldCheck, label: "Aprovação" },
-  meeting: { icon: CalendarCheck, label: "Reunião" },
   risk: { icon: AlertTriangle, label: "Risco" },
 };
 
 const sevStyle: Record<Priority["severity"], string> = {
-  low: "bg-muted text-muted-foreground ring-border",
   medium: "bg-warning/10 text-warning ring-warning/25",
   high: "bg-danger/10 text-danger ring-danger/25",
 };
 
-export function PrioritiesPanel() {
+function dueLabel(value: string) {
+  const due = new Date(value);
+  const diffDays = Math.ceil((due.getTime() - Date.now()) / 86_400_000);
+  if (diffDays < 0) return `Atrasado ${Math.abs(diffDays)}d`;
+  if (diffDays === 0) return "Hoje";
+  if (diffDays === 1) return "Amanhã";
+  return due.toLocaleDateString("pt-BR");
+}
+
+export function PrioritiesPanel({ data: priorities }: { data: DashboardSummary["priorities"] }) {
   return (
     <motion.section
       initial={{ opacity: 0, y: 12 }}
@@ -40,6 +48,7 @@ export function PrioritiesPanel() {
       </div>
 
       <ul className="flex flex-col gap-2">
+        {priorities.length === 0 && <li className="rounded-lg border border-border/60 p-6 text-center text-sm text-muted-foreground">Nenhuma prioridade pendente.</li>}
         {priorities.map((p, i) => {
           const meta = kindMeta[p.kind];
           const Icon = meta.icon;
@@ -65,7 +74,7 @@ export function PrioritiesPanel() {
                     {meta.label}
                   </span>
                   <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1", sevStyle[p.severity])}>
-                    {p.when}
+                    {dueLabel(p.dueAt)}
                   </span>
                 </div>
                 <div className="mt-0.5 truncate text-sm font-medium text-foreground">
