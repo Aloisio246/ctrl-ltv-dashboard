@@ -12,6 +12,7 @@ import {
   HeartPulse,
   BarChart3,
   Settings,
+  UserPlus,
   type LucideIcon,
 } from "lucide-react";
 
@@ -119,6 +120,14 @@ export const MODULES: ModuleDef[] = [
     description: "Conversão, receita, margem, CAC e LTV por dimensão.",
     to: "/reports",
     icon: BarChart3,
+    phase: "live",
+  },
+  {
+    key: "access-requests",
+    label: "Solicitações",
+    description: "Contatos que solicitaram acesso e aguardam avaliação administrativa.",
+    to: "/access-requests",
+    icon: UserPlus,
     phase: "live",
   },
   {

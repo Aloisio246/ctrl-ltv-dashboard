@@ -136,7 +136,14 @@ export type Prospect = {
   companyId: string;
   ownerUserId: string | null;
   status:
-    "new" | "contacted" | "qualified" | "proposal" | "negotiation" | "won" | "lost" | "archived";
+    | "new"
+    | "contacted"
+    | "qualified"
+    | "proposal"
+    | "negotiation"
+    | "won"
+    | "lost"
+    | "archived";
   temperature: "cold" | "warm" | "hot";
   score: number;
   nextFollowUpAt: string | null;
@@ -277,6 +284,17 @@ export type Me = {
   user: { id: string; email: string; displayName: string };
   activeMembership: { organizationId: string; organizationName: string; role: string };
   memberships: Array<{ organizationId: string; organizationName: string; role: string }>;
+};
+export type RegistrationRequest = {
+  id: string;
+  displayName: string;
+  email: string;
+  organizationName: string;
+  phone: string | null;
+  message: string | null;
+  status: "pending" | "notified" | "failed" | "reviewed";
+  createdAt: string;
+  updatedAt: string;
 };
 export type IntegrationProvider =
   | "google_places"
@@ -795,10 +813,9 @@ export async function fetchEvolutionInstanceStatus(id: string) {
 }
 
 export async function disconnectEvolutionInstance(id: string) {
-  return apiFetch<{ id: string; status: string }>(
-    `/v1/evolution/instances/${id}/disconnect`,
-    { method: "POST" },
-  );
+  return apiFetch<{ id: string; status: string }>(`/v1/evolution/instances/${id}/disconnect`, {
+    method: "POST",
+  });
 }
 
 export async function login(email: string, password: string) {
@@ -828,47 +845,65 @@ export async function login(email: string, password: string) {
   }
 }
 
-export async function bootstrap(input: {
+export async function requestAccess(input: {
   email: string;
   displayName: string;
-  password: string;
   organizationName: string;
-  organizationSlug: string;
+  phone?: string;
+  message?: string;
+  website: string;
 }) {
   if (!API_BASE_URL || typeof window === "undefined")
-    return { ok: false as const, error: new ApiUnavailableError("Backend não conectado") };
+    return {
+      ok: false as const,
+      kind: "temporary" as const,
+      error: new ApiUnavailableError("Backend não conectado"),
+    };
   try {
-    const response = await fetch(`${API_BASE_URL}/v1/auth/bootstrap`, {
+    const response = await fetch(`${API_BASE_URL}/v1/auth/registration-requests`, {
       method: "POST",
       cache: "no-store",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(input),
     });
     if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      const kind =
+        response.status === 429
+          ? ("rate_limit" as const)
+          : response.status === 400
+            ? ("validation" as const)
+            : ("temporary" as const);
       const message =
-        payload?.error === "validation_error"
-          ? "Confira os dados informados."
-          : payload?.error === "public_registration_disabled"
-            ? "A criação pública de workspaces está desativada."
-            : response.status === 409
-              ? "Este e-mail ou identificador de workspace já está em uso."
-              : "Não foi possível criar o workspace.";
-      return { ok: false as const, error: new ApiUnavailableError(message) };
+        kind === "rate_limit"
+          ? "Muitas tentativas. Aguarde antes de enviar novamente."
+          : kind === "validation"
+            ? "Confira os dados informados."
+            : "Não foi possível enviar agora. Tente novamente em instantes.";
+      return { ok: false as const, kind, error: new ApiUnavailableError(message) };
     }
-    const payload = (await response.json()) as {
-      data: { accessToken: string; refreshToken: string };
-    };
-    persistSession(payload.data);
-    return { ok: true as const, data: payload.data };
+    return { ok: true as const };
   } catch (error) {
     return {
       ok: false as const,
+      kind: "temporary" as const,
       error: new ApiUnavailableError(
-        error instanceof Error ? error.message : "Não foi possível criar o workspace",
+        error instanceof Error ? error.message : "Não foi possível enviar agora",
       ),
     };
   }
+}
+
+export async function fetchRegistrationRequests(status?: RegistrationRequest["status"]) {
+  return apiFetch<RegistrationRequest[]>(
+    `/v1/registration-requests?limit=100&offset=0${status ? `&status=${status}` : ""}`,
+  );
+}
+
+export async function markRegistrationRequestReviewed(id: string) {
+  return apiFetch<RegistrationRequest>(`/v1/registration-requests/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "reviewed" }),
+  });
 }
 
 export async function logout() {
