@@ -9,84 +9,35 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShellRouteImport } from './routes/_shell'
-import { Route as ShellActivitiesRouteImport } from './routes/_shell.activities'
-import { Route as ShellApprovalsRouteImport } from './routes/_shell.approvals'
-import { Route as ShellCaptureRouteImport } from './routes/_shell.capture'
-import { Route as ShellClientsRouteImport } from './routes/_shell.clients'
-import { Route as ShellContactsRouteImport } from './routes/_shell.contacts'
-import { Route as ShellDashboardRouteImport } from './routes/_shell.dashboard'
-import { Route as ShellFinanceRouteImport } from './routes/_shell.finance'
-import { Route as ShellInboxRouteImport } from './routes/_shell.inbox'
-import { Route as ShellPipelineRouteImport } from './routes/_shell.pipeline'
-import { Route as ShellProspectsRouteImport } from './routes/_shell.prospects'
-import { Route as ShellReportsRouteImport } from './routes/_shell.reports'
-import { Route as ShellRetentionRouteImport } from './routes/_shell.retention'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShellSettingsRouteImport } from './routes/_shell.settings'
+import { Route as ShellRetentionRouteImport } from './routes/_shell.retention'
+import { Route as ShellReportsRouteImport } from './routes/_shell.reports'
+import { Route as ShellProspectsRouteImport } from './routes/_shell.prospects'
+import { Route as ShellPipelineRouteImport } from './routes/_shell.pipeline'
+import { Route as ShellInboxRouteImport } from './routes/_shell.inbox'
+import { Route as ShellFinanceRouteImport } from './routes/_shell.finance'
+import { Route as ShellDashboardRouteImport } from './routes/_shell.dashboard'
+import { Route as ShellContactsRouteImport } from './routes/_shell.contacts'
+import { Route as ShellClientsRouteImport } from './routes/_shell.clients'
+import { Route as ShellCaptureRouteImport } from './routes/_shell.capture'
+import { Route as ShellApprovalsRouteImport } from './routes/_shell.approvals'
+import { Route as ShellActivitiesRouteImport } from './routes/_shell.activities'
+import { Route as ShellAccessRequestsRouteImport } from './routes/_shell.access-requests'
 
+const ShellRoute = ShellRouteImport.update({
+  id: '/_shell',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ShellRoute = ShellRouteImport.update({
-  id: '/_shell',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ShellActivitiesRoute = ShellActivitiesRouteImport.update({
-  id: '/activities',
-  path: '/activities',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellApprovalsRoute = ShellApprovalsRouteImport.update({
-  id: '/approvals',
-  path: '/approvals',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellCaptureRoute = ShellCaptureRouteImport.update({
-  id: '/capture',
-  path: '/capture',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellClientsRoute = ShellClientsRouteImport.update({
-  id: '/clients',
-  path: '/clients',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellContactsRoute = ShellContactsRouteImport.update({
-  id: '/contacts',
-  path: '/contacts',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellDashboardRoute = ShellDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellFinanceRoute = ShellFinanceRouteImport.update({
-  id: '/finance',
-  path: '/finance',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellInboxRoute = ShellInboxRouteImport.update({
-  id: '/inbox',
-  path: '/inbox',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellPipelineRoute = ShellPipelineRouteImport.update({
-  id: '/pipeline',
-  path: '/pipeline',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellProspectsRoute = ShellProspectsRouteImport.update({
-  id: '/prospects',
-  path: '/prospects',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellReportsRoute = ShellReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
+const ShellSettingsRoute = ShellSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellRetentionRoute = ShellRetentionRouteImport.update({
@@ -94,14 +45,70 @@ const ShellRetentionRoute = ShellRetentionRouteImport.update({
   path: '/retention',
   getParentRoute: () => ShellRoute,
 } as any)
-const ShellSettingsRoute = ShellSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+const ShellReportsRoute = ShellReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellProspectsRoute = ShellProspectsRouteImport.update({
+  id: '/prospects',
+  path: '/prospects',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellPipelineRoute = ShellPipelineRouteImport.update({
+  id: '/pipeline',
+  path: '/pipeline',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellInboxRoute = ShellInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellFinanceRoute = ShellFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellDashboardRoute = ShellDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellContactsRoute = ShellContactsRouteImport.update({
+  id: '/contacts',
+  path: '/contacts',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellClientsRoute = ShellClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellCaptureRoute = ShellCaptureRouteImport.update({
+  id: '/capture',
+  path: '/capture',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellApprovalsRoute = ShellApprovalsRouteImport.update({
+  id: '/approvals',
+  path: '/approvals',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellActivitiesRoute = ShellActivitiesRouteImport.update({
+  id: '/activities',
+  path: '/activities',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellAccessRequestsRoute = ShellAccessRequestsRouteImport.update({
+  id: '/access-requests',
+  path: '/access-requests',
   getParentRoute: () => ShellRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/access-requests': typeof ShellAccessRequestsRoute
   '/activities': typeof ShellActivitiesRoute
   '/approvals': typeof ShellApprovalsRoute
   '/capture': typeof ShellCaptureRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/access-requests': typeof ShellAccessRequestsRoute
   '/activities': typeof ShellActivitiesRoute
   '/approvals': typeof ShellApprovalsRoute
   '/capture': typeof ShellCaptureRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_shell': typeof ShellRouteWithChildren
+  '/_shell/access-requests': typeof ShellAccessRequestsRoute
   '/_shell/activities': typeof ShellActivitiesRoute
   '/_shell/approvals': typeof ShellApprovalsRoute
   '/_shell/capture': typeof ShellCaptureRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/access-requests'
     | '/activities'
     | '/approvals'
     | '/capture'
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/access-requests'
     | '/activities'
     | '/approvals'
     | '/capture'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_shell'
+    | '/_shell/access-requests'
     | '/_shell/activities'
     | '/_shell/approvals'
     | '/_shell/capture'
@@ -209,13 +221,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_shell': {
       id: '/_shell'
       path: ''
@@ -223,81 +228,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_shell/activities': {
-      id: '/_shell/activities'
-      path: '/activities'
-      fullPath: '/activities'
-      preLoaderRoute: typeof ShellActivitiesRouteImport
-      parentRoute: typeof ShellRoute
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_shell/approvals': {
-      id: '/_shell/approvals'
-      path: '/approvals'
-      fullPath: '/approvals'
-      preLoaderRoute: typeof ShellApprovalsRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/capture': {
-      id: '/_shell/capture'
-      path: '/capture'
-      fullPath: '/capture'
-      preLoaderRoute: typeof ShellCaptureRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/clients': {
-      id: '/_shell/clients'
-      path: '/clients'
-      fullPath: '/clients'
-      preLoaderRoute: typeof ShellClientsRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/contacts': {
-      id: '/_shell/contacts'
-      path: '/contacts'
-      fullPath: '/contacts'
-      preLoaderRoute: typeof ShellContactsRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/dashboard': {
-      id: '/_shell/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof ShellDashboardRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/finance': {
-      id: '/_shell/finance'
-      path: '/finance'
-      fullPath: '/finance'
-      preLoaderRoute: typeof ShellFinanceRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/inbox': {
-      id: '/_shell/inbox'
-      path: '/inbox'
-      fullPath: '/inbox'
-      preLoaderRoute: typeof ShellInboxRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/pipeline': {
-      id: '/_shell/pipeline'
-      path: '/pipeline'
-      fullPath: '/pipeline'
-      preLoaderRoute: typeof ShellPipelineRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/prospects': {
-      id: '/_shell/prospects'
-      path: '/prospects'
-      fullPath: '/prospects'
-      preLoaderRoute: typeof ShellProspectsRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/reports': {
-      id: '/_shell/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof ShellReportsRouteImport
+    '/_shell/settings': {
+      id: '/_shell/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof ShellSettingsRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/retention': {
@@ -307,17 +249,95 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellRetentionRouteImport
       parentRoute: typeof ShellRoute
     }
-    '/_shell/settings': {
-      id: '/_shell/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof ShellSettingsRouteImport
+    '/_shell/reports': {
+      id: '/_shell/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ShellReportsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/prospects': {
+      id: '/_shell/prospects'
+      path: '/prospects'
+      fullPath: '/prospects'
+      preLoaderRoute: typeof ShellProspectsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/pipeline': {
+      id: '/_shell/pipeline'
+      path: '/pipeline'
+      fullPath: '/pipeline'
+      preLoaderRoute: typeof ShellPipelineRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/inbox': {
+      id: '/_shell/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof ShellInboxRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/finance': {
+      id: '/_shell/finance'
+      path: '/finance'
+      fullPath: '/finance'
+      preLoaderRoute: typeof ShellFinanceRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/dashboard': {
+      id: '/_shell/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof ShellDashboardRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/contacts': {
+      id: '/_shell/contacts'
+      path: '/contacts'
+      fullPath: '/contacts'
+      preLoaderRoute: typeof ShellContactsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/clients': {
+      id: '/_shell/clients'
+      path: '/clients'
+      fullPath: '/clients'
+      preLoaderRoute: typeof ShellClientsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/capture': {
+      id: '/_shell/capture'
+      path: '/capture'
+      fullPath: '/capture'
+      preLoaderRoute: typeof ShellCaptureRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/approvals': {
+      id: '/_shell/approvals'
+      path: '/approvals'
+      fullPath: '/approvals'
+      preLoaderRoute: typeof ShellApprovalsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/activities': {
+      id: '/_shell/activities'
+      path: '/activities'
+      fullPath: '/activities'
+      preLoaderRoute: typeof ShellActivitiesRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/access-requests': {
+      id: '/_shell/access-requests'
+      path: '/access-requests'
+      fullPath: '/access-requests'
+      preLoaderRoute: typeof ShellAccessRequestsRouteImport
       parentRoute: typeof ShellRoute
     }
   }
 }
 
 interface ShellRouteChildren {
+  ShellAccessRequestsRoute: typeof ShellAccessRequestsRoute
   ShellActivitiesRoute: typeof ShellActivitiesRoute
   ShellApprovalsRoute: typeof ShellApprovalsRoute
   ShellCaptureRoute: typeof ShellCaptureRoute
@@ -334,6 +354,7 @@ interface ShellRouteChildren {
 }
 
 const ShellRouteChildren: ShellRouteChildren = {
+  ShellAccessRequestsRoute: ShellAccessRequestsRoute,
   ShellActivitiesRoute: ShellActivitiesRoute,
   ShellApprovalsRoute: ShellApprovalsRoute,
   ShellCaptureRoute: ShellCaptureRoute,
