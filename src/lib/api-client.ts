@@ -871,7 +871,7 @@ export async function createEvolutionInstance(label: string) {
 export async function connectEvolutionInstance(id: string) {
   return apiFetch<{ id: string; status: string; qrCode: string | null }>(
     `/v1/evolution/instances/${id}/connect`,
-    { method: "POST" },
+    { method: "POST", body: JSON.stringify({}) },
   );
 }
 
@@ -884,6 +884,7 @@ export async function fetchEvolutionInstanceStatus(id: string) {
 export async function disconnectEvolutionInstance(id: string) {
   return apiFetch<{ id: string; status: string }>(`/v1/evolution/instances/${id}/disconnect`, {
     method: "POST",
+    body: JSON.stringify({}),
   });
 }
 
