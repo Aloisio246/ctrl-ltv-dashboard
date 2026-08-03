@@ -747,6 +747,7 @@ function FinancePage() {
         </section>
       )}
 
+      {loading && !metrics && !error && <LoadingState label="Carregando dados financeiros…" />}
       {metrics && (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[
@@ -762,7 +763,7 @@ function FinancePage() {
           ))}
         </div>
       )}
-      {!error && contracts.length === 0 && invoices.length === 0 && (
+      {!error && !loading && contracts.length === 0 && invoices.length === 0 && (
         <EmptyState
           title="Nenhum movimento financeiro"
           description="Contratos e cobranças aparecerão nesta visão."
