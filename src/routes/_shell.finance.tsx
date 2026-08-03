@@ -781,9 +781,9 @@ function FinancePage() {
                 key={contract.id}
                 className="flex flex-col gap-2 rounded-lg border border-border/50 bg-surface/40 p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
               >
-                <span>
-                  {clientName(contract.clientId)} ·{" "}
-                  <span className="capitalize">{contract.status}</span>
+                <span className="flex min-w-0 flex-wrap items-center gap-2">
+                  <span className="truncate">{clientName(contract.clientId)}</span>
+                  <StatusBadge status={contract.status} />
                 </span>
                 <div className="flex items-center gap-3">
                   <strong>
