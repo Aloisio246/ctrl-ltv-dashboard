@@ -32,11 +32,25 @@ import {
   type Invoice,
   type MetricsSummary,
 } from "@/lib/api-client";
-import { ApiUnavailableState, EmptyState } from "@/components/states";
+import { ApiUnavailableState, EmptyState, LoadingState } from "@/components/states";
+import { Notice, type NoticeState } from "@/components/feedback";
 import { Button } from "@/components/ui/button";
 import { AppSelect } from "@/components/ui/app-select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { statusLabel } from "@/lib/status";
 import { toIsoDate } from "@/lib/format";
 
 const mod = getModule("finance")!;
@@ -64,12 +78,12 @@ function FinancePage() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<NoticeState>(null);
+  const [loading, setLoading] = useState(true);
   const [showContract, setShowContract] = useState(false);
   const [editingContractId, setEditingContractId] = useState<string | null>(null);
   const [showInvoice, setShowInvoice] = useState(false);
   const [showCost, setShowCost] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [selectedClient, setSelectedClient] = useState("");
   const [monthlyValue, setMonthlyValue] = useState("");
   const [setupFee, setSetupFee] = useState("");
@@ -87,11 +101,14 @@ function FinancePage() {
   const [costCategory, setCostCategory] = useState("delivery");
   const [paymentAmounts, setPaymentAmounts] = useState<Record<string, string>>({});
   const [paymentSaving, setPaymentSaving] = useState<string | null>(null);
+  const [paymentTarget, setPaymentTarget] = useState<Invoice | null>(null);
+  const [saving, setSaving] = useState(false);
   const [reminderSettings, setReminderSettings] =
     useState<BillingReminderSettings>(defaultReminderSettings);
   const [reminderSaving, setReminderSaving] = useState(false);
 
   async function load() {
+    setLoading(true);
     const [
       metricResult,
       clientResult,
@@ -107,6 +124,7 @@ function FinancePage() {
       fetchInvoices(),
       fetchBillingReminderSettings(),
     ]);
+    setLoading(false);
     if (
       !metricResult.ok ||
       !clientResult.ok ||
@@ -114,7 +132,7 @@ function FinancePage() {
       !contractResult.ok ||
       !invoiceResult.ok
     ) {
-      setError("Não foi possível carregar o financeiro local.");
+      setError("Não conseguimos carregar os dados financeiros agora. Tente novamente.");
       return;
     }
     setError(null);
@@ -146,6 +164,7 @@ function FinancePage() {
 
   async function handleCreateContract(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving) return;
     setSaving(true);
     setNotice(null);
     const result = editingContractId
@@ -164,9 +183,14 @@ function FinancePage() {
           setupFee: Number(setupFee || 0),
           currency: "BRL",
         });
-    if (!result.ok) setNotice(result.error.message);
+    if (!result.ok) setNotice({ tone: "error", message: result.error.message });
     else {
-      setNotice(editingContractId ? "Contrato atualizado." : "Contrato criado e incluído no MRR.");
+      setNotice({
+        tone: "success",
+        message: editingContractId
+          ? "Contrato atualizado."
+          : "Contrato criado e incluído no MRR.",
+      });
       setShowContract(false);
       setEditingContractId(null);
       setSelectedClient("");
@@ -195,6 +219,7 @@ function FinancePage() {
 
   async function handleCreateInvoice(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving) return;
     setSaving(true);
     setNotice(null);
     const result = await createInvoice({
@@ -207,9 +232,9 @@ function FinancePage() {
       paymentProvider: paymentUrl ? "manual" : undefined,
       paymentUrl: paymentUrl || undefined,
     });
-    if (!result.ok) setNotice(result.error.message);
+    if (!result.ok) setNotice({ tone: "error", message: result.error.message });
     else {
-      setNotice("Cobrança criada.");
+      setNotice({ tone: "success", message: "Cobrança criada." });
       setShowInvoice(false);
       setInvoiceNumber("");
       setSubtotal("");
@@ -222,6 +247,7 @@ function FinancePage() {
 
   async function handleCreateCost(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving) return;
     setSaving(true);
     setNotice(null);
     const result = await createCost({
@@ -231,9 +257,9 @@ function FinancePage() {
       category: costCategory,
       incurredAt: new Date().toISOString(),
     });
-    if (!result.ok) setNotice(result.error.message);
+    if (!result.ok) setNotice({ tone: "error", message: result.error.message });
     else {
-      setNotice("Custo registrado e refletido na margem.");
+      setNotice({ tone: "success", message: "Custo registrado e refletido na margem." });
       setShowCost(false);
       setCostDescription("");
       setCostAmount("");
@@ -243,13 +269,15 @@ function FinancePage() {
   }
 
   async function handlePayment(invoice: Invoice) {
+    if (paymentSaving) return;
     const amount = Number(paymentAmounts[invoice.id] || invoice.subtotal);
+    setPaymentTarget(null);
     setPaymentSaving(invoice.id);
     setNotice(null);
     const result = await createPayment({ invoiceId: invoice.id, amount, method: "manual" });
-    if (!result.ok) setNotice(result.error.message);
+    if (!result.ok) setNotice({ tone: "error", message: result.error.message });
     else {
-      setNotice(`Pagamento de ${money(amount)} registrado.`);
+      setNotice({ tone: "success", message: `Pagamento de ${money(amount)} registrado.` });
       setPaymentAmounts((current) => ({ ...current, [invoice.id]: "" }));
       await load();
     }
@@ -257,6 +285,7 @@ function FinancePage() {
   }
 
   async function handleSaveReminderSettings() {
+    if (reminderSaving) return;
     setReminderSaving(true);
     setNotice(null);
     const result = await saveBillingReminderSettings({
@@ -268,14 +297,15 @@ function FinancePage() {
       paymentProvider: reminderSettings.paymentProvider,
       template: reminderSettings.template,
     });
-    if (!result.ok) setNotice(result.error.message);
+    if (!result.ok) setNotice({ tone: "error", message: result.error.message });
     else {
       setReminderSettings(result.data);
-      setNotice(
-        result.data.enabled
+      setNotice({
+        tone: "success",
+        message: result.data.enabled
           ? "Lembretes automáticos ativados com segurança."
           : "Lembretes automáticos desativados.",
-      );
+      });
     }
     setReminderSaving(false);
   }
@@ -305,11 +335,7 @@ function FinancePage() {
         </div>
       </header>
       {error && <ApiUnavailableState message={error} />}
-      {notice && (
-        <div className="rounded-lg border border-lime/20 bg-lime/5 px-4 py-3 text-sm text-lime">
-          {notice}
-        </div>
-      )}
+      <Notice notice={notice} onDismiss={() => setNotice(null)} />
 
       <section className="surface-card border-lime/15 p-5">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
@@ -323,21 +349,19 @@ function FinancePage() {
               sistema não envia nada sem canal conectado e link de pagamento válido.
             </p>
           </div>
-          <span
-            className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${reminderSettings.enabled ? "border-lime/30 bg-lime/10 text-lime" : "border-amber-300/25 bg-amber-300/10 text-amber-200"}`}
-          >
-            {reminderSettings.enabled ? "ativo" : "desativado"}
-          </span>
+          <StatusBadge
+            status={reminderSettings.enabled ? "active" : "disconnected"}
+            label={reminderSettings.enabled ? "Ativo" : "Desativado"}
+            className="self-start"
+          />
         </div>
         <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.6fr)]">
           <div className="space-y-4">
             <label className="flex items-center gap-3 rounded-lg border border-border/60 bg-surface/40 p-3 text-sm font-medium">
-              <input
-                type="checkbox"
-                className="h-4 w-4 accent-lime"
+              <Checkbox
                 checked={reminderSettings.enabled}
-                onChange={(event) =>
-                  setReminderSettings((current) => ({ ...current, enabled: event.target.checked }))
+                onCheckedChange={(checked) =>
+                  setReminderSettings((current) => ({ ...current, enabled: checked === true }))
                 }
               />
               Ativar disparo automático dos lembretes
@@ -723,6 +747,7 @@ function FinancePage() {
         </section>
       )}
 
+      {loading && !metrics && !error && <LoadingState label="Carregando dados financeiros…" />}
       {metrics && (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[
@@ -738,7 +763,7 @@ function FinancePage() {
           ))}
         </div>
       )}
-      {!error && contracts.length === 0 && invoices.length === 0 && (
+      {!error && !loading && contracts.length === 0 && invoices.length === 0 && (
         <EmptyState
           title="Nenhum movimento financeiro"
           description="Contratos e cobranças aparecerão nesta visão."
@@ -756,9 +781,9 @@ function FinancePage() {
                 key={contract.id}
                 className="flex flex-col gap-2 rounded-lg border border-border/50 bg-surface/40 p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
               >
-                <span>
-                  {clientName(contract.clientId)} ·{" "}
-                  <span className="capitalize">{contract.status}</span>
+                <span className="flex min-w-0 flex-wrap items-center gap-2">
+                  <span className="truncate">{clientName(contract.clientId)}</span>
+                  <StatusBadge status={contract.status} />
                 </span>
                 <div className="flex items-center gap-3">
                   <strong>
@@ -787,41 +812,81 @@ function FinancePage() {
                 className="rounded-lg border border-border/50 bg-surface/40 p-3 text-sm"
               >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <span>
-                    {clientName(invoice.clientId)} · {invoice.number} ·{" "}
-                    <span className="capitalize">{invoice.status}</span>
+                  <span className="flex min-w-0 flex-wrap items-center gap-2">
+                    <span className="truncate">
+                      {clientName(invoice.clientId)} · {invoice.number}
+                    </span>
+                    <StatusBadge status={invoice.status} />
                   </span>
                   <strong>{money(invoice.subtotal)}</strong>
                 </div>
-                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                  <Input
-                    className="sm:max-w-[180px]"
-                    min="0"
-                    step="0.01"
-                    type="number"
-                    placeholder={`Receber ${money(invoice.subtotal)}`}
-                    value={paymentAmounts[invoice.id] ?? ""}
-                    onChange={(event) =>
-                      setPaymentAmounts((current) => ({
-                        ...current,
-                        [invoice.id]: event.target.value,
-                      }))
-                    }
-                  />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={paymentSaving === invoice.id}
-                    onClick={() => void handlePayment(invoice)}
-                  >
-                    {paymentSaving === invoice.id ? "Registrando…" : "Registrar pagamento"}
-                  </Button>
-                </div>
+                {invoice.status === "paid" || invoice.status === "void" ? (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Cobrança {statusLabel(invoice.status).toLowerCase()} — nenhuma ação pendente.
+                  </p>
+                ) : (
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <label className="sr-only" htmlFor={`payment-${invoice.id}`}>
+                      Valor recebido da cobrança {invoice.number}
+                    </label>
+                    <Input
+                      id={`payment-${invoice.id}`}
+                      className="sm:max-w-[180px]"
+                      min="0"
+                      step="0.01"
+                      type="number"
+                      placeholder={`Receber ${money(invoice.subtotal)}`}
+                      value={paymentAmounts[invoice.id] ?? ""}
+                      onChange={(event) =>
+                        setPaymentAmounts((current) => ({
+                          ...current,
+                          [invoice.id]: event.target.value,
+                        }))
+                      }
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={paymentSaving !== null}
+                      onClick={() => setPaymentTarget(invoice)}
+                    >
+                      {paymentSaving === invoice.id ? "Registrando…" : "Registrar pagamento"}
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </section>
       )}
+
+      <AlertDialog
+        open={paymentTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setPaymentTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar recebimento manual</AlertDialogTitle>
+            <AlertDialogDescription>
+              {paymentTarget
+                ? `Vamos registrar ${money(paymentAmounts[paymentTarget.id] || paymentTarget.subtotal)} como recebido na cobrança ${paymentTarget.number} de ${clientName(paymentTarget.clientId)}. Essa baixa altera a receita realizada.`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (paymentTarget) void handlePayment(paymentTarget);
+              }}
+            >
+              Confirmar recebimento
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

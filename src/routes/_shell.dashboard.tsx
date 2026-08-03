@@ -9,8 +9,15 @@ import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { OperationsHealth } from "@/components/dashboard/operations-health";
 import { CalendarRange, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { AppSelect } from "@/components/ui/app-select";
 import { API_BASE_URL, fetchDashboardSummary, type DashboardSummary } from "@/lib/api-client";
 import type { JourneyStage, MetricCard } from "@/lib/mock/dashboard";
+
+const PERIOD_OPTIONS = [
+  { value: "30", label: "Últimos 30 dias" },
+  { value: "90", label: "Últimos 90 dias" },
+  { value: "365", label: "Últimos 12 meses" },
+];
 
 export const Route = createFileRoute("/_shell/dashboard")({
   head: () => ({
@@ -46,6 +53,8 @@ function DashboardPage() {
     });
   }, [periodDays]);
 
+  const periodLabel = PERIOD_OPTIONS.find((option) => Number(option.value) === periodDays)?.label ?? "";
+
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-6">
       <motion.header
@@ -65,13 +74,38 @@ function DashboardPage() {
             Como está a jornada de aquisição, receita e retenção agora.
           </p>
         </div>
-        <PeriodFilter value={periodDays} onChange={setPeriodDays} />
+        <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
+          <span
+            className="text-[11px] font-medium text-muted-foreground"
+            id="dashboard-period-label"
+          >
+            Período analisado
+          </span>
+          <div className="flex items-center gap-2">
+            <CalendarRange aria-hidden="true" className="h-4 w-4 shrink-0 text-lime" />
+            <AppSelect
+              ariaLabel="Período analisado no dashboard"
+              className="w-[190px]"
+              value={String(periodDays)}
+              onValueChange={(value) => setPeriodDays(Number(value))}
+              options={PERIOD_OPTIONS}
+            />
+          </div>
+        </div>
       </motion.header>
 
-      {loading && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Carregando dados…</div>}
-      <JourneyRail data={summary ? toJourney(summary) : []} />
+      <div aria-live="polite" className="sr-only">
+        {loading ? "Carregando dados do dashboard" : ""}
+      </div>
+      {loading && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin text-lime" /> Atualizando
+          indicadores de {periodLabel.toLowerCase()}…
+        </div>
+      )}
+      <JourneyRail data={summary ? toJourney(summary) : []} periodLabel={periodLabel} />
 
-      <ExecutiveCards data={summary ? toMetrics(summary) : []} />
+      <ExecutiveCards data={summary ? toMetrics(summary) : []} periodLabel={periodLabel} />
 
       <div className="grid gap-4 xl:grid-cols-3">
         <div className="xl:col-span-2">
@@ -115,23 +149,4 @@ function toJourney(summary: DashboardSummary): JourneyStage[] {
     { key: "retention", label: "Retenção", count: summary.metrics.activeClients - summary.metrics.cancelledThisMonth, conversion: null, hint: "sem cancelamento no mês" },
     { key: "ltv", label: "LTV", count: summary.metrics.averageLtv > 0 ? summary.metrics.activeClients : 0, conversion: null, hint: "com LTV calculado" },
   ];
-}
-
-function PeriodFilter({ value, onChange }: { value: number; onChange: (value: number) => void }) {
-  return (
-    <label className="flex shrink-0 items-center gap-2 rounded-lg border border-border/70 bg-surface/70 px-3 py-2 text-sm text-foreground transition-colors hover:border-lime/40">
-      <CalendarRange className="h-4 w-4 text-lime" />
-      <span className="sr-only">Período do dashboard</span>
-      <select
-        aria-label="Período do dashboard"
-        className="cursor-pointer border-0 bg-transparent text-sm text-foreground outline-none"
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-      >
-        <option value={30}>Últimos 30 dias</option>
-        <option value={90}>Últimos 90 dias</option>
-        <option value={365}>Últimos 12 meses</option>
-      </select>
-    </label>
-  );
 }

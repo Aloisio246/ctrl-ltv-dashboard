@@ -16,6 +16,7 @@ import {
   type Contract,
 } from "@/lib/api-client";
 import { ApiUnavailableState, EmptyState } from "@/components/states";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { AppSelect } from "@/components/ui/app-select";
 import { Input } from "@/components/ui/input";
@@ -392,8 +393,8 @@ function ClientsPage() {
                 <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <div className="text-xs text-muted-foreground">Status</div>
-                    <div className="mt-1 font-medium capitalize">
-                      {client.status.replace("_", " ")}
+                    <div className="mt-1">
+                      <StatusBadge status={client.status} />
                     </div>
                   </div>
                   <div>
