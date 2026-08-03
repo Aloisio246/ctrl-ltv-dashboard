@@ -9,8 +9,15 @@ import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { OperationsHealth } from "@/components/dashboard/operations-health";
 import { CalendarRange, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { AppSelect } from "@/components/ui/app-select";
 import { API_BASE_URL, fetchDashboardSummary, type DashboardSummary } from "@/lib/api-client";
 import type { JourneyStage, MetricCard } from "@/lib/mock/dashboard";
+
+const PERIOD_OPTIONS = [
+  { value: "30", label: "Últimos 30 dias" },
+  { value: "90", label: "Últimos 90 dias" },
+  { value: "365", label: "Últimos 12 meses" },
+];
 
 export const Route = createFileRoute("/_shell/dashboard")({
   head: () => ({
