@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { motion as m } from "@/lib/motion";
 import { useCommandCenter } from "@/components/command-center";
 import { MobileNav } from "@/components/shell/mobile-nav";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { fetchDashboardSummary, logout, type DashboardSummary } from "@/lib/api-client";
 
 export function Topbar() {
