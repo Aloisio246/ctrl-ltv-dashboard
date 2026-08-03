@@ -888,6 +888,12 @@ export async function disconnectEvolutionInstance(id: string) {
   });
 }
 
+export async function deleteEvolutionInstance(id: string) {
+  return apiFetch<{ id: string; deleted: boolean }>(`/v1/evolution/instances/${id}`, {
+    method: "DELETE",
+  });
+}
+
 export async function login(email: string, password: string) {
   if (!API_BASE_URL || typeof window === "undefined")
     return { ok: false as const, error: new ApiUnavailableError("Backend não conectado") };

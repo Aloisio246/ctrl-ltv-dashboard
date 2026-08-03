@@ -1,13 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Building2, Check, CreditCard, ExternalLink, KeyRound, Link2, Mail, MessageCircle, Plus, Save, ShieldCheck, Unplug, UserRound, X } from "lucide-react";
+import { Building2, Check, CreditCard, ExternalLink, KeyRound, Link2, Mail, MessageCircle, Plus, RefreshCw, Save, ShieldCheck, Trash2, Unplug, UserRound, X } from "lucide-react";
 import { getModule } from "@/lib/modules";
 import {
   fetchIntegrations,
   fetchEvolutionInstances,
   createEvolutionInstance,
   connectEvolutionInstance,
+  deleteEvolutionInstance,
   disconnectEvolutionInstance,
+  fetchEvolutionInstanceStatus,
   fetchMe,
   removeIntegration,
   saveIntegration,
@@ -212,6 +214,26 @@ function EvolutionCard({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  async function refreshStatuses() {
+    const refreshed = await Promise.all(
+      instances.map(async (instance) => {
+        const result = await fetchEvolutionInstanceStatus(instance.id);
+        return result.ok ? { ...instance, status: result.data.status } : instance;
+      }),
+    );
+    onChanged(refreshed);
+    if (refreshed.some((instance) => instance.status === "connected")) {
+      setQrCode(null);
+      setMessage("WhatsApp conectado com sucesso.");
+    }
+  }
+
+  useEffect(() => {
+    if (!instances.some((instance) => instance.status === "connecting")) return;
+    const timer = window.setInterval(() => void refreshStatuses(), 4_000);
+    return () => window.clearInterval(timer);
+  }, [instances]);
+
   async function createInstance() {
     setBusy(true);
     setMessage(null);
@@ -250,6 +272,22 @@ function EvolutionCard({
     setBusy(false);
   }
 
+  async function remove(instance: EvolutionInstance) {
+    const confirmed = window.confirm(
+      `Excluir a conexão “${instance.label}”? A sessão será removida também da Evolution API.`,
+    );
+    if (!confirmed) return;
+    setBusy(true);
+    setMessage(null);
+    const result = await deleteEvolutionInstance(instance.id);
+    if (result.ok) {
+      onChanged(instances.filter((item) => item.id !== instance.id));
+      setQrCode(null);
+      setMessage("Conexão excluída.");
+    } else setMessage(result.error.message);
+    setBusy(false);
+  }
+
   return (
     <section className="surface-card p-5 xl:col-span-2">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -274,10 +312,12 @@ function EvolutionCard({
       <div className="mt-5 grid gap-2">
         {instances.map((instance) => (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 p-3" key={instance.id}>
-            <div><p className="text-sm font-semibold">{instance.label}</p><p className="mt-1 text-xs text-muted-foreground">{instance.phoneNumber ?? instance.instanceName} · {instance.status}</p></div>
+            <div><p className="text-sm font-semibold">{instance.label}</p><p className="mt-1 text-xs text-muted-foreground">{instance.profileName ?? instance.phoneNumber ?? instance.instanceName} · {instance.status === "connected" ? "conectado" : instance.status === "connecting" ? "conectando" : instance.status === "error" ? "erro" : "desconectado"}</p></div>
             <div className="flex gap-2">
               {instance.status !== "connected" && <Button disabled={busy} onClick={() => void reconnect(instance)} type="button" variant="outline">Exibir QR</Button>}
               {instance.status === "connected" && <Button disabled={busy} onClick={() => void disconnect(instance)} type="button" variant="outline"><Unplug className="mr-2 h-4 w-4" /> Desconectar</Button>}
+              <Button aria-label={`Atualizar status de ${instance.label}`} disabled={busy} onClick={() => void refreshStatuses()} type="button" variant="outline"><RefreshCw className="h-4 w-4" /></Button>
+              <Button aria-label={`Excluir ${instance.label}`} disabled={busy} onClick={() => void remove(instance)} type="button" variant="outline"><Trash2 className="h-4 w-4 text-destructive" /></Button>
             </div>
           </div>
         ))}
