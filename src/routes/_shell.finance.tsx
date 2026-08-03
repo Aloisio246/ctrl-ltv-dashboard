@@ -812,36 +812,48 @@ function FinancePage() {
                 className="rounded-lg border border-border/50 bg-surface/40 p-3 text-sm"
               >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <span>
-                    {clientName(invoice.clientId)} · {invoice.number} ·{" "}
-                    <span className="capitalize">{invoice.status}</span>
+                  <span className="flex min-w-0 flex-wrap items-center gap-2">
+                    <span className="truncate">
+                      {clientName(invoice.clientId)} · {invoice.number}
+                    </span>
+                    <StatusBadge status={invoice.status} />
                   </span>
                   <strong>{money(invoice.subtotal)}</strong>
                 </div>
-                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                  <Input
-                    className="sm:max-w-[180px]"
-                    min="0"
-                    step="0.01"
-                    type="number"
-                    placeholder={`Receber ${money(invoice.subtotal)}`}
-                    value={paymentAmounts[invoice.id] ?? ""}
-                    onChange={(event) =>
-                      setPaymentAmounts((current) => ({
-                        ...current,
-                        [invoice.id]: event.target.value,
-                      }))
-                    }
-                  />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={paymentSaving === invoice.id}
-                    onClick={() => void handlePayment(invoice)}
-                  >
-                    {paymentSaving === invoice.id ? "Registrando…" : "Registrar pagamento"}
-                  </Button>
-                </div>
+                {invoice.status === "paid" || invoice.status === "void" ? (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Cobrança {statusLabel(invoice.status).toLowerCase()} — nenhuma ação pendente.
+                  </p>
+                ) : (
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <label className="sr-only" htmlFor={`payment-${invoice.id}`}>
+                      Valor recebido da cobrança {invoice.number}
+                    </label>
+                    <Input
+                      id={`payment-${invoice.id}`}
+                      className="sm:max-w-[180px]"
+                      min="0"
+                      step="0.01"
+                      type="number"
+                      placeholder={`Receber ${money(invoice.subtotal)}`}
+                      value={paymentAmounts[invoice.id] ?? ""}
+                      onChange={(event) =>
+                        setPaymentAmounts((current) => ({
+                          ...current,
+                          [invoice.id]: event.target.value,
+                        }))
+                      }
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={paymentSaving !== null}
+                      onClick={() => setPaymentTarget(invoice)}
+                    >
+                      {paymentSaving === invoice.id ? "Registrando…" : "Registrar pagamento"}
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
