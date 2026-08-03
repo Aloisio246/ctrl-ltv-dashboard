@@ -349,21 +349,19 @@ function FinancePage() {
               sistema não envia nada sem canal conectado e link de pagamento válido.
             </p>
           </div>
-          <span
-            className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${reminderSettings.enabled ? "border-lime/30 bg-lime/10 text-lime" : "border-amber-300/25 bg-amber-300/10 text-amber-200"}`}
-          >
-            {reminderSettings.enabled ? "ativo" : "desativado"}
-          </span>
+          <StatusBadge
+            status={reminderSettings.enabled ? "active" : "disconnected"}
+            label={reminderSettings.enabled ? "Ativo" : "Desativado"}
+            className="self-start"
+          />
         </div>
         <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.6fr)]">
           <div className="space-y-4">
             <label className="flex items-center gap-3 rounded-lg border border-border/60 bg-surface/40 p-3 text-sm font-medium">
-              <input
-                type="checkbox"
-                className="h-4 w-4 accent-lime"
+              <Checkbox
                 checked={reminderSettings.enabled}
-                onChange={(event) =>
-                  setReminderSettings((current) => ({ ...current, enabled: event.target.checked }))
+                onCheckedChange={(checked) =>
+                  setReminderSettings((current) => ({ ...current, enabled: checked === true }))
                 }
               />
               Ativar disparo automático dos lembretes
