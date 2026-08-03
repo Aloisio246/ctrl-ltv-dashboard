@@ -150,22 +150,3 @@ function toJourney(summary: DashboardSummary): JourneyStage[] {
     { key: "ltv", label: "LTV", count: summary.metrics.averageLtv > 0 ? summary.metrics.activeClients : 0, conversion: null, hint: "com LTV calculado" },
   ];
 }
-
-function PeriodFilter({ value, onChange }: { value: number; onChange: (value: number) => void }) {
-  return (
-    <label className="flex shrink-0 items-center gap-2 rounded-lg border border-border/70 bg-surface/70 px-3 py-2 text-sm text-foreground transition-colors hover:border-lime/40">
-      <CalendarRange className="h-4 w-4 text-lime" />
-      <span className="sr-only">Período do dashboard</span>
-      <select
-        aria-label="Período do dashboard"
-        className="cursor-pointer border-0 bg-transparent text-sm text-foreground outline-none"
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-      >
-        <option value={30}>Últimos 30 dias</option>
-        <option value={90}>Últimos 90 dias</option>
-        <option value={365}>Últimos 12 meses</option>
-      </select>
-    </label>
-  );
-}
