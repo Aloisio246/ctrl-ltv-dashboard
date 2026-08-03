@@ -14,9 +14,9 @@ docker network inspect ctrl-ltv-automation >/dev/null 2>&1 || docker network cre
 
 Crie os registros DNS apontando para a VPS:
 
-- `evolution.seudominio.com`
-- `n8n.seudominio.com`
-- `webhook-n8n.seudominio.com`
+- `evo-api.performify.shop`
+- `n8n.performify.shop`
+- `webhook.performify.shop`
 
 Use os domínios reais nas variáveis do Coolify. O proxy e os certificados HTTPS serão gerenciados pelo Coolify.
 
@@ -38,7 +38,7 @@ No Coolify, crie um recurso **Docker Compose** usando o repositório do frontend
 Compose file: /evolution-api
 Service público: evolution-api
 Porta interna: 8080
-Domínio: https://evolution.seudominio.com
+Domínio: https://evo-api.performify.shop
 ```
 
 Cadastre as variáveis correspondentes ao bloco `EVOLUTION_*` de `automation.env.example` e também:
@@ -60,8 +60,8 @@ Compose file: /n8n.stack.yaml
 Configure dois serviços públicos:
 
 ```text
-n8n-editor  → porta 5678 → https://n8n.seudominio.com
-n8n-webhook → porta 5678 → https://webhook-n8n.seudominio.com
+n8n-editor  → porta 5678 → https://n8n.performify.shop
+n8n-webhook → porta 5678 → https://webhook.performify.shop
 ```
 
 O serviço `n8n-worker`, o PostgreSQL e o Redis não recebem domínio público.
