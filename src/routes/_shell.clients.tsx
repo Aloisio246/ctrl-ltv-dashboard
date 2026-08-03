@@ -16,6 +16,7 @@ import {
   type Contract,
 } from "@/lib/api-client";
 import { ApiUnavailableState, EmptyState } from "@/components/states";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { AppSelect } from "@/components/ui/app-select";
 import { Input } from "@/components/ui/input";
