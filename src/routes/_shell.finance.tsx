@@ -164,6 +164,7 @@ function FinancePage() {
 
   async function handleCreateContract(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving) return;
     setSaving(true);
     setNotice(null);
     const result = editingContractId
@@ -182,9 +183,14 @@ function FinancePage() {
           setupFee: Number(setupFee || 0),
           currency: "BRL",
         });
-    if (!result.ok) setNotice(result.error.message);
+    if (!result.ok) setNotice({ tone: "error", message: result.error.message });
     else {
-      setNotice(editingContractId ? "Contrato atualizado." : "Contrato criado e incluído no MRR.");
+      setNotice({
+        tone: "success",
+        message: editingContractId
+          ? "Contrato atualizado."
+          : "Contrato criado e incluído no MRR.",
+      });
       setShowContract(false);
       setEditingContractId(null);
       setSelectedClient("");
@@ -213,6 +219,7 @@ function FinancePage() {
 
   async function handleCreateInvoice(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving) return;
     setSaving(true);
     setNotice(null);
     const result = await createInvoice({
@@ -225,9 +232,9 @@ function FinancePage() {
       paymentProvider: paymentUrl ? "manual" : undefined,
       paymentUrl: paymentUrl || undefined,
     });
-    if (!result.ok) setNotice(result.error.message);
+    if (!result.ok) setNotice({ tone: "error", message: result.error.message });
     else {
-      setNotice("Cobrança criada.");
+      setNotice({ tone: "success", message: "Cobrança criada." });
       setShowInvoice(false);
       setInvoiceNumber("");
       setSubtotal("");
@@ -240,6 +247,7 @@ function FinancePage() {
 
   async function handleCreateCost(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving) return;
     setSaving(true);
     setNotice(null);
     const result = await createCost({
@@ -249,9 +257,9 @@ function FinancePage() {
       category: costCategory,
       incurredAt: new Date().toISOString(),
     });
-    if (!result.ok) setNotice(result.error.message);
+    if (!result.ok) setNotice({ tone: "error", message: result.error.message });
     else {
-      setNotice("Custo registrado e refletido na margem.");
+      setNotice({ tone: "success", message: "Custo registrado e refletido na margem." });
       setShowCost(false);
       setCostDescription("");
       setCostAmount("");
@@ -261,13 +269,15 @@ function FinancePage() {
   }
 
   async function handlePayment(invoice: Invoice) {
+    if (paymentSaving) return;
     const amount = Number(paymentAmounts[invoice.id] || invoice.subtotal);
+    setPaymentTarget(null);
     setPaymentSaving(invoice.id);
     setNotice(null);
     const result = await createPayment({ invoiceId: invoice.id, amount, method: "manual" });
-    if (!result.ok) setNotice(result.error.message);
+    if (!result.ok) setNotice({ tone: "error", message: result.error.message });
     else {
-      setNotice(`Pagamento de ${money(amount)} registrado.`);
+      setNotice({ tone: "success", message: `Pagamento de ${money(amount)} registrado.` });
       setPaymentAmounts((current) => ({ ...current, [invoice.id]: "" }));
       await load();
     }
@@ -275,6 +285,7 @@ function FinancePage() {
   }
 
   async function handleSaveReminderSettings() {
+    if (reminderSaving) return;
     setReminderSaving(true);
     setNotice(null);
     const result = await saveBillingReminderSettings({
@@ -286,14 +297,15 @@ function FinancePage() {
       paymentProvider: reminderSettings.paymentProvider,
       template: reminderSettings.template,
     });
-    if (!result.ok) setNotice(result.error.message);
+    if (!result.ok) setNotice({ tone: "error", message: result.error.message });
     else {
       setReminderSettings(result.data);
-      setNotice(
-        result.data.enabled
+      setNotice({
+        tone: "success",
+        message: result.data.enabled
           ? "Lembretes automáticos ativados com segurança."
           : "Lembretes automáticos desativados.",
-      );
+      });
     }
     setReminderSaving(false);
   }
