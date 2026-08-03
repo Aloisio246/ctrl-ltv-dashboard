@@ -335,11 +335,7 @@ function FinancePage() {
         </div>
       </header>
       {error && <ApiUnavailableState message={error} />}
-      {notice && (
-        <div className="rounded-lg border border-lime/20 bg-lime/5 px-4 py-3 text-sm text-lime">
-          {notice}
-        </div>
-      )}
+      <Notice notice={notice} onDismiss={() => setNotice(null)} />
 
       <section className="surface-card border-lime/15 p-5">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
