@@ -78,12 +78,12 @@ function FinancePage() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<NoticeState>(null);
+  const [loading, setLoading] = useState(true);
   const [showContract, setShowContract] = useState(false);
   const [editingContractId, setEditingContractId] = useState<string | null>(null);
   const [showInvoice, setShowInvoice] = useState(false);
   const [showCost, setShowCost] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [selectedClient, setSelectedClient] = useState("");
   const [monthlyValue, setMonthlyValue] = useState("");
   const [setupFee, setSetupFee] = useState("");
