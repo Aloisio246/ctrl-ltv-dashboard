@@ -101,11 +101,14 @@ function FinancePage() {
   const [costCategory, setCostCategory] = useState("delivery");
   const [paymentAmounts, setPaymentAmounts] = useState<Record<string, string>>({});
   const [paymentSaving, setPaymentSaving] = useState<string | null>(null);
+  const [paymentTarget, setPaymentTarget] = useState<Invoice | null>(null);
+  const [saving, setSaving] = useState(false);
   const [reminderSettings, setReminderSettings] =
     useState<BillingReminderSettings>(defaultReminderSettings);
   const [reminderSaving, setReminderSaving] = useState(false);
 
   async function load() {
+    setLoading(true);
     const [
       metricResult,
       clientResult,
@@ -121,6 +124,7 @@ function FinancePage() {
       fetchInvoices(),
       fetchBillingReminderSettings(),
     ]);
+    setLoading(false);
     if (
       !metricResult.ok ||
       !clientResult.ok ||
@@ -128,7 +132,7 @@ function FinancePage() {
       !contractResult.ok ||
       !invoiceResult.ok
     ) {
-      setError("Não foi possível carregar o financeiro local.");
+      setError("Não conseguimos carregar os dados financeiros agora. Tente novamente.");
       return;
     }
     setError(null);
