@@ -136,14 +136,7 @@ export type Prospect = {
   companyId: string;
   ownerUserId: string | null;
   status:
-    | "new"
-    | "contacted"
-    | "qualified"
-    | "proposal"
-    | "negotiation"
-    | "won"
-    | "lost"
-    | "archived";
+    "new" | "contacted" | "qualified" | "proposal" | "negotiation" | "won" | "lost" | "archived";
   temperature: "cold" | "warm" | "hot";
   score: number;
   nextFollowUpAt: string | null;
@@ -152,12 +145,55 @@ export type Prospect = {
 export type Opportunity = {
   id: string;
   prospectId: string;
+  pipelineId: string;
+  stageId: string;
+  routedByRuleId: string | null;
   stage: string;
   amount: string | number;
   currency: string;
   expectedCloseAt: string | null;
   lostReason: string | null;
   createdAt: string;
+};
+export type PipelineStage = {
+  id: string;
+  name: string;
+  position: number;
+  kind: "open" | "won" | "lost";
+  color: string | null;
+};
+export type Pipeline = {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string;
+  isDefault: boolean;
+  status: "active" | "archived";
+  stages: PipelineStage[];
+  createdAt: string;
+  updatedAt: string;
+};
+export type PipelineRoutingConditions = {
+  source?: string;
+  campaign?: string;
+  city?: string;
+  state?: string;
+  niche?: string;
+  serviceInterest?: string;
+  contactType?: "prospect" | "client";
+};
+export type PipelineRoutingRule = {
+  id: string;
+  name: string;
+  priority: number;
+  active: boolean;
+  conditions: PipelineRoutingConditions;
+  pipelineId: string;
+  stageId: string;
+  pipelineName?: string;
+  stageName?: string;
+  createdAt: string;
+  updatedAt: string;
 };
 export type Client = {
   id: string;
@@ -297,12 +333,7 @@ export type RegistrationRequest = {
   updatedAt: string;
 };
 export type IntegrationProvider =
-  | "google_places"
-  | "serper"
-  | "rapidapi"
-  | "apify"
-  | "email"
-  | "asaas";
+  "google_places" | "serper" | "rapidapi" | "apify" | "email" | "asaas";
 export type Integration = {
   id: string;
   provider: IntegrationProvider;
@@ -598,8 +629,45 @@ export async function createActivity(input: {
 export async function fetchOpportunities() {
   return apiFetch<Opportunity[]>("/v1/opportunities?limit=100&offset=0");
 }
+export async function fetchPipelines() {
+  return apiFetch<Pipeline[]>("/v1/pipelines");
+}
+export async function createPipeline(input: {
+  name: string;
+  description?: string;
+  color?: string;
+  isDefault?: boolean;
+  stages: Array<{ name: string; position: number; kind: PipelineStage["kind"]; color?: string }>;
+}) {
+  return apiFetch<Pipeline>("/v1/pipelines", { method: "POST", body: JSON.stringify(input) });
+}
+export async function updatePipeline(
+  id: string,
+  input: Partial<Pick<Pipeline, "name" | "description" | "color" | "isDefault" | "status">>,
+) {
+  return apiFetch<Pipeline>(`/v1/pipelines/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+export async function fetchPipelineRoutingRules() {
+  return apiFetch<PipelineRoutingRule[]>("/v1/pipeline-routing-rules");
+}
+export async function createPipelineRoutingRule(
+  input: Omit<PipelineRoutingRule, "id" | "pipelineName" | "stageName" | "createdAt" | "updatedAt">,
+) {
+  return apiFetch<PipelineRoutingRule>("/v1/pipeline-routing-rules", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+export async function deletePipelineRoutingRule(id: string) {
+  return apiFetch<void>(`/v1/pipeline-routing-rules/${id}`, { method: "DELETE" });
+}
 export async function createOpportunity(input: {
   prospectId: string;
+  pipelineId?: string;
+  stageId?: string;
   stage?: Opportunity["stage"];
   amount?: number;
   currency?: string;
@@ -612,12 +680,13 @@ export async function createOpportunity(input: {
 }
 export async function updateOpportunityStage(
   id: string,
-  stage: Opportunity["stage"],
+  stageId: string,
+  pipelineId?: string,
   lostReason?: string,
 ) {
   return apiFetch<Opportunity>(`/v1/opportunities/${id}`, {
     method: "PATCH",
-    body: JSON.stringify({ stage, lostReason }),
+    body: JSON.stringify({ stageId, pipelineId, lostReason }),
   });
 }
 export async function fetchClients() {
