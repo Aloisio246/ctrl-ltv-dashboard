@@ -392,8 +392,8 @@ function ClientsPage() {
                 <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <div className="text-xs text-muted-foreground">Status</div>
-                    <div className="mt-1 font-medium capitalize">
-                      {client.status.replace("_", " ")}
+                    <div className="mt-1">
+                      <StatusBadge status={client.status} />
                     </div>
                   </div>
                   <div>
