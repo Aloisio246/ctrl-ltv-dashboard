@@ -38,7 +38,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
 
 function LoadingScreen() {
   return (
-    <div className="grid min-h-screen place-items-center bg-background px-4">
+    <div className="grid min-h-dvh place-items-center bg-background px-4">
       <div className="flex items-center gap-3 text-sm text-muted-foreground">
         <span className="h-2 w-2 animate-pulse rounded-full bg-lime" />
         Conectando ao Ctrl LTV local…
@@ -70,7 +70,7 @@ function LoginScreen({
   }
 
   return (
-    <div className="relative grid min-h-screen overflow-hidden bg-background px-4 py-10 text-foreground">
+    <div className="relative grid min-h-dvh overflow-hidden bg-background px-4 py-10 text-foreground">
       <div className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-lime/10 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-32 right-0 h-96 w-96 rounded-full bg-violet/10 blur-3xl" />
       <main className="relative m-auto w-full max-w-md">
@@ -179,7 +179,7 @@ function RequestAccessScreen({ onBackToLogin }: { onBackToLogin: () => void }) {
   }
 
   return (
-    <div className="relative grid min-h-screen overflow-hidden bg-background px-4 py-10 text-foreground">
+    <div className="relative grid min-h-dvh overflow-hidden bg-background px-4 py-10 text-foreground">
       <div className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-lime/10 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-32 right-0 h-96 w-96 rounded-full bg-violet/10 blur-3xl" />
       <main className="relative m-auto w-full max-w-md">

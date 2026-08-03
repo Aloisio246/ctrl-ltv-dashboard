@@ -16,7 +16,7 @@ export function AppSidebar() {
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: m.duration.slow, ease: m.ease.enter }}
       className={cn(
-        "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex",
+        "sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex",
         collapsed ? "w-[76px]" : "w-[248px]",
       )}
       style={{ transition: "width 240ms cubic-bezier(0.2,0,0,1)" }}
