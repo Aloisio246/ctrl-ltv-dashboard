@@ -46,6 +46,8 @@ function DashboardPage() {
     });
   }, [periodDays]);
 
+  const periodLabel = PERIOD_OPTIONS.find((option) => Number(option.value) === periodDays)?.label ?? "";
+
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-6">
       <motion.header
@@ -65,13 +67,38 @@ function DashboardPage() {
             Como está a jornada de aquisição, receita e retenção agora.
           </p>
         </div>
-        <PeriodFilter value={periodDays} onChange={setPeriodDays} />
+        <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
+          <span
+            className="text-[11px] font-medium text-muted-foreground"
+            id="dashboard-period-label"
+          >
+            Período analisado
+          </span>
+          <div className="flex items-center gap-2">
+            <CalendarRange aria-hidden="true" className="h-4 w-4 shrink-0 text-lime" />
+            <AppSelect
+              ariaLabel="Período analisado no dashboard"
+              className="w-[190px]"
+              value={String(periodDays)}
+              onValueChange={(value) => setPeriodDays(Number(value))}
+              options={PERIOD_OPTIONS}
+            />
+          </div>
+        </div>
       </motion.header>
 
-      {loading && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Carregando dados…</div>}
-      <JourneyRail data={summary ? toJourney(summary) : []} />
+      <div aria-live="polite" className="sr-only">
+        {loading ? "Carregando dados do dashboard" : ""}
+      </div>
+      {loading && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin text-lime" /> Atualizando
+          indicadores de {periodLabel.toLowerCase()}…
+        </div>
+      )}
+      <JourneyRail data={summary ? toJourney(summary) : []} periodLabel={periodLabel} />
 
-      <ExecutiveCards data={summary ? toMetrics(summary) : []} />
+      <ExecutiveCards data={summary ? toMetrics(summary) : []} periodLabel={periodLabel} />
 
       <div className="grid gap-4 xl:grid-cols-3">
         <div className="xl:col-span-2">
