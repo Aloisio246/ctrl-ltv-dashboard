@@ -50,30 +50,55 @@ export function Topbar() {
         </kbd>
       </button>
 
-      <button
-        aria-label="Notificações"
-        aria-expanded={notificationsOpen}
-        onClick={() => setNotificationsOpen((current) => !current)}
-        className="relative grid h-10 w-10 place-items-center rounded-lg border border-border/60 bg-surface/60 text-muted-foreground transition-colors hover:border-lime/40 hover:text-foreground"
-      >
-        <Bell className="h-4 w-4" />
-        {notificationCount > 0 && <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-lime" />}
-      </button>
-      {notificationsOpen && (
-        <div className="absolute right-28 top-14 z-50 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-border bg-surface p-3 shadow-2xl">
-          <div className="border-b border-border/60 px-2 pb-2">
+      <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+        <PopoverTrigger asChild>
+          <button
+            aria-label={
+              notificationCount > 0
+                ? `Notificações: ${notificationCount} pendências`
+                : "Notificações: nenhuma pendência"
+            }
+            className="relative grid h-10 w-10 place-items-center rounded-lg border border-border/60 bg-surface/60 text-muted-foreground transition-colors hover:border-lime/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            <Bell aria-hidden="true" className="h-4 w-4" />
+            {notificationCount > 0 && (
+              <span className="absolute right-1.5 top-1.5 min-w-4 rounded-full bg-lime px-1 text-[10px] font-bold leading-4 text-lime-foreground">
+                {notificationCount > 9 ? "9+" : notificationCount}
+              </span>
+            )}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-[min(22rem,calc(100vw-2rem))] p-3">
+          <div className="border-b border-border/60 px-1 pb-2">
             <div className="text-sm font-semibold">Notificações</div>
             <div className="text-xs text-muted-foreground">
-              {notificationCount ? `${notificationCount} itens exigem atenção` : "Nenhuma pendência agora"}
+              {notificationCount
+                ? `${notificationCount} ${notificationCount === 1 ? "item exige" : "itens exigem"} atenção`
+                : "Nenhuma pendência agora"}
             </div>
           </div>
           <div className="mt-2 grid gap-1">
-            <NotificationLink to="/inbox" label="Mensagens não lidas" count={unreadCount} onClick={() => setNotificationsOpen(false)} />
-            <NotificationLink to="/approvals" label="Aprovações pendentes" count={approvalCount} onClick={() => setNotificationsOpen(false)} />
-            <NotificationLink to="/finance" label="Cobranças vencidas" count={overdueCount} onClick={() => setNotificationsOpen(false)} />
+            <NotificationLink
+              to="/inbox"
+              label="Mensagens não lidas"
+              count={unreadCount}
+              onClick={() => setNotificationsOpen(false)}
+            />
+            <NotificationLink
+              to="/approvals"
+              label="Aprovações pendentes"
+              count={approvalCount}
+              onClick={() => setNotificationsOpen(false)}
+            />
+            <NotificationLink
+              to="/finance"
+              label="Cobranças vencidas"
+              count={overdueCount}
+              onClick={() => setNotificationsOpen(false)}
+            />
           </div>
-        </div>
-      )}
+        </PopoverContent>
+      </Popover>
 
       <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-surface/60 px-2 py-1.5">
         <div className="grid h-7 w-7 place-items-center rounded-md bg-gradient-to-br from-lime to-violet text-[11px] font-bold text-lime-foreground">
