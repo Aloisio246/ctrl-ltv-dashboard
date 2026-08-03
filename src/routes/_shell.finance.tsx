@@ -859,6 +859,34 @@ function FinancePage() {
           </div>
         </section>
       )}
+
+      <AlertDialog
+        open={paymentTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setPaymentTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar recebimento manual</AlertDialogTitle>
+            <AlertDialogDescription>
+              {paymentTarget
+                ? `Vamos registrar ${money(paymentAmounts[paymentTarget.id] || paymentTarget.subtotal)} como recebido na cobrança ${paymentTarget.number} de ${clientName(paymentTarget.clientId)}. Essa baixa altera a receita realizada.`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (paymentTarget) void handlePayment(paymentTarget);
+              }}
+            >
+              Confirmar recebimento
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
