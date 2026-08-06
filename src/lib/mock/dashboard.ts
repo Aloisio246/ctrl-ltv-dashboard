@@ -106,3 +106,61 @@ export const health: HealthDomain[] = [
   { key: "finance", label: "Financeiro", score: 91, status: "healthy", headline: "Inadimplência abaixo de 2%" },
   { key: "retention", label: "Retenção", score: 64, status: "at_risk", headline: "2 clientes com sinais críticos" },
 ];
+
+// ---------------------------------------------------------------------------
+// Adaptadores para os painéis que já usam o formato de resposta da API.
+// Usados apenas como fallback de demonstração quando a API não está ligada.
+// ---------------------------------------------------------------------------
+
+function offsetIso(days: number, hour = 9): string {
+  const date = new Date();
+  date.setHours(hour, 0, 0, 0);
+  date.setDate(date.getDate() + days);
+  return date.toISOString();
+}
+
+export const demoPriorities: Array<{
+  id: string;
+  kind: "followup" | "approval" | "risk";
+  title: string;
+  subtitle: string;
+  dueAt: string;
+  severity: "medium" | "high";
+}> = [
+  { id: "p1", kind: "followup", title: "Follow-up atrasado — Padaria Aurora", subtitle: "Última interação há 6 dias", dueAt: offsetIso(-2), severity: "high" },
+  { id: "p2", kind: "approval", title: "Lote WhatsApp aguardando revisão", subtitle: "42 mensagens preparadas · campanha Junho", dueAt: offsetIso(0), severity: "medium" },
+  { id: "p3", kind: "followup", title: "Diagnóstico — Studio Norte", subtitle: "Reunião comercial confirmada", dueAt: offsetIso(0, 14), severity: "medium" },
+  { id: "p4", kind: "risk", title: "Cliente em risco — Ótica Vitrine", subtitle: "Saúde caiu para atenção · pagamento pendente", dueAt: offsetIso(-1), severity: "high" },
+  { id: "p5", kind: "followup", title: "Proposta pendente — Marmoraria Vega", subtitle: "Enviada há 4 dias sem retorno", dueAt: offsetIso(0), severity: "medium" },
+  { id: "p6", kind: "followup", title: "Kickoff — Clínica Origem", subtitle: "Onboarding do novo cliente", dueAt: offsetIso(1), severity: "medium" },
+];
+
+export const demoActivity: Array<{
+  id: string;
+  actor: string;
+  action: string;
+  target: string;
+  createdAt: string;
+  tone: "neutral" | "positive" | "warning" | "negative";
+}> = [
+  { id: "a1", actor: "Beatriz Rocha", action: "moveu para", target: "Ganho · Panificadora Sol", createdAt: new Date(Date.now() - 4 * 60_000).toISOString(), tone: "positive" },
+  { id: "a2", actor: "Sistema", action: "importou", target: "218 novos registros · Google Maps", createdAt: new Date(Date.now() - 12 * 60_000).toISOString(), tone: "neutral" },
+  { id: "a3", actor: "Diego Alves", action: "aprovou lote", target: "WhatsApp · 42 mensagens", createdAt: new Date(Date.now() - 27 * 60_000).toISOString(), tone: "neutral" },
+  { id: "a4", actor: "Sistema", action: "sinalizou", target: "Cliente em risco · Ótica Vitrine", createdAt: new Date(Date.now() - 42 * 60_000).toISOString(), tone: "warning" },
+  { id: "a5", actor: "Marina Prado", action: "registrou reunião com", target: "Studio Norte", createdAt: new Date(Date.now() - 61 * 60_000).toISOString(), tone: "neutral" },
+  { id: "a6", actor: "Sistema", action: "encerrou", target: "Perda · Autoescola Rota (motivo: preço)", createdAt: new Date(Date.now() - 125 * 60_000).toISOString(), tone: "negative" },
+];
+
+export const demoHealth: Array<{
+  key: "capture" | "pipeline" | "finance" | "retention";
+  label: string;
+  available: boolean;
+  score: number;
+  headline: string;
+}> = health.map((domain) => ({
+  key: domain.key as "capture" | "pipeline" | "finance" | "retention",
+  label: domain.label,
+  available: true,
+  score: domain.score,
+  headline: domain.headline,
+}));
