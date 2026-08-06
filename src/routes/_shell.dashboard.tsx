@@ -58,12 +58,21 @@ function DashboardPage() {
     if (!API_BASE_URL) return;
     setLoading(true);
     fetchDashboardSummary(periodDays).then((result) => {
-      if (result.ok) setSummary(result.data);
+      setSummary(result.ok ? result.data : null);
       setLoading(false);
     });
   }, [periodDays]);
 
   const periodLabel = PERIOD_OPTIONS.find((option) => Number(option.value) === periodDays)?.label ?? "";
+
+  // Sem API disponível (ou com falha), o painel usa a base de demonstração completa.
+  const usingDemoData = !summary;
+  const journeyData = summary ? toJourney(summary) : mockJourney;
+  const metricsData = summary ? toMetrics(summary) : mockMetrics;
+  const revenueData = summary?.revenueSeries ?? mockRevenueSeries;
+  const prioritiesData = summary?.priorities ?? demoPriorities;
+  const activityData = summary?.recentActivity ?? demoActivity;
+  const healthData = summary?.operationsHealth ?? demoHealth;
 
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-6">
@@ -113,26 +122,33 @@ function DashboardPage() {
           indicadores de {periodLabel.toLowerCase()}…
         </div>
       )}
-      <JourneyRail data={summary ? toJourney(summary) : []} periodLabel={periodLabel} />
+      {!loading && usingDemoData && (
+        <p className="flex items-center gap-2 text-xs text-muted-foreground">
+          <FlaskConical aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-violet" />
+          Dados de demonstração. Ao conectar a API, os números reais substituem este painel.
+        </p>
+      )}
+      <JourneyRail data={journeyData} periodLabel={periodLabel} />
 
-      <ExecutiveCards data={summary ? toMetrics(summary) : []} periodLabel={periodLabel} />
+      <ExecutiveCards data={metricsData} periodLabel={periodLabel} />
 
       <div className="grid gap-4 xl:grid-cols-3">
         <div className="xl:col-span-2">
-          <RevenueChart data={summary?.revenueSeries ?? []} />
+          <RevenueChart data={revenueData} />
         </div>
-        <PrioritiesPanel data={summary?.priorities ?? []} />
+        <PrioritiesPanel data={prioritiesData} />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
         <div className="xl:col-span-2">
-          <OperationsHealth data={summary?.operationsHealth ?? []} />
+          <OperationsHealth data={healthData} />
         </div>
-        <ActivityFeed data={summary?.recentActivity ?? []} />
+        <ActivityFeed data={activityData} />
       </div>
     </div>
   );
 }
+
 
 function toMetrics(summary: DashboardSummary): MetricCard[] {
   const pipelineCount = summary.pipeline.reduce((total, item) => total + item.count, 0);
