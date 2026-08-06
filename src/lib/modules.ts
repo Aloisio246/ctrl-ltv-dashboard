@@ -7,12 +7,10 @@ import {
   ShieldCheck,
   CalendarClock,
   Building2,
-  ContactRound,
   Wallet,
   HeartPulse,
   BarChart3,
   Settings,
-  UserPlus,
   type LucideIcon,
 } from "lucide-react";
 
@@ -25,6 +23,10 @@ export type ModuleDef = {
   phase: "live" | "planned";
 };
 
+/**
+ * Mapa canônico do Ctrl LTV. Contatos e empresas são entidades internas
+ * exibidas dentro de Prospects e Clientes — não módulos de navegação.
+ */
 export const MODULES: ModuleDef[] = [
   {
     key: "dashboard",
@@ -43,14 +45,6 @@ export const MODULES: ModuleDef[] = [
     phase: "live",
   },
   {
-    key: "contacts",
-    label: "Contatos",
-    description: "Pessoas e empresas que podem avançar para a prospecção e virar clientes.",
-    to: "/contacts",
-    icon: ContactRound,
-    phase: "live",
-  },
-  {
     key: "prospects",
     label: "Prospects",
     description: "Base qualificada com score, canal elegível e próxima ação.",
@@ -64,7 +58,7 @@ export const MODULES: ModuleDef[] = [
     description: "Kanban comercial da negociação até o ganho.",
     to: "/pipeline",
     icon: KanbanSquare,
-    phase: "live",
+    phase: "planned",
   },
   {
     key: "inbox",
@@ -72,7 +66,7 @@ export const MODULES: ModuleDef[] = [
     description: "Caixa de entrada omnichannel unificada por prospect.",
     to: "/inbox",
     icon: MessagesSquare,
-    phase: "live",
+    phase: "planned",
   },
   {
     key: "approvals",
@@ -80,7 +74,7 @@ export const MODULES: ModuleDef[] = [
     description: "Lotes de comunicação preparados aguardando revisão.",
     to: "/approvals",
     icon: ShieldCheck,
-    phase: "live",
+    phase: "planned",
   },
   {
     key: "activities",
@@ -88,7 +82,7 @@ export const MODULES: ModuleDef[] = [
     description: "Follow-ups, reuniões, propostas e tarefas do time.",
     to: "/activities",
     icon: CalendarClock,
-    phase: "live",
+    phase: "planned",
   },
   {
     key: "clients",
@@ -96,7 +90,7 @@ export const MODULES: ModuleDef[] = [
     description: "Empresas ativas, serviços contratados e histórico.",
     to: "/clients",
     icon: Building2,
-    phase: "live",
+    phase: "planned",
   },
   {
     key: "finance",
@@ -104,7 +98,7 @@ export const MODULES: ModuleDef[] = [
     description: "Contratos, cobranças, pagamentos, custos e MRR.",
     to: "/finance",
     icon: Wallet,
-    phase: "live",
+    phase: "planned",
   },
   {
     key: "retention",
@@ -112,7 +106,7 @@ export const MODULES: ModuleDef[] = [
     description: "Saúde, riscos, renovações e churn dos clientes.",
     to: "/retention",
     icon: HeartPulse,
-    phase: "live",
+    phase: "planned",
   },
   {
     key: "reports",
@@ -120,15 +114,7 @@ export const MODULES: ModuleDef[] = [
     description: "Conversão, receita, margem, CAC e LTV por dimensão.",
     to: "/reports",
     icon: BarChart3,
-    phase: "live",
-  },
-  {
-    key: "access-requests",
-    label: "Solicitações",
-    description: "Contatos que solicitaram acesso e aguardam avaliação administrativa.",
-    to: "/access-requests",
-    icon: UserPlus,
-    phase: "live",
+    phase: "planned",
   },
   {
     key: "settings",
@@ -136,7 +122,7 @@ export const MODULES: ModuleDef[] = [
     description: "Organização, usuários, canais, integrações e políticas.",
     to: "/settings",
     icon: Settings,
-    phase: "live",
+    phase: "planned",
   },
 ];
 
