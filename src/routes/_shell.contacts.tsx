@@ -379,7 +379,10 @@ function ContactsPage() {
                     required
                   />
                 </Field>
-                <Field label="Site da empresa" hint="Aceita apenas o domínio; o https é adicionado.">
+                <Field
+                  label="Site da empresa"
+                  hint="Aceita apenas o domínio; o https é adicionado."
+                >
                   <Input
                     value={companyWebsite}
                     onChange={(event) => setCompanyWebsite(event.target.value)}
@@ -491,7 +494,9 @@ function ContactsPage() {
       </div>
 
       {loading && <LoadingState label="Carregando contatos…" />}
-      {!loading && loadError && <ApiUnavailableState message={loadError} onRetry={() => void load()} />}
+      {!loading && loadError && (
+        <ApiUnavailableState message={loadError} onRetry={() => void load()} />
+      )}
       {!loading && !loadError && contacts.length === 0 && (
         <EmptyState
           title="Nenhum contato cadastrado"
@@ -529,7 +534,11 @@ function ContactsPage() {
                     </p>
                   </div>
                   {contact.clientId ? (
-                    <StatusBadge status={contact.clientStatus ?? "active"} label="Cliente atual" tone="info" />
+                    <StatusBadge
+                      status={contact.clientStatus ?? "active"}
+                      label="Cliente atual"
+                      tone="info"
+                    />
                   ) : (
                     <StatusBadge label="Potencial cliente" tone="positive" />
                   )}

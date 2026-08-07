@@ -166,10 +166,7 @@ function InboxPage() {
                 </p>
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-3 text-xs text-muted-foreground">
                   {conversation.unreadCount > 0 ? (
-                    <StatusBadge
-                      label={`${conversation.unreadCount} não lida(s)`}
-                      tone="warning"
-                    />
+                    <StatusBadge label={`${conversation.unreadCount} não lida(s)`} tone="warning" />
                   ) : (
                     <span>Sem mensagens não lidas</span>
                   )}

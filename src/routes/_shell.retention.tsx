@@ -64,10 +64,7 @@ function RetentionPage() {
     return map;
   }, [clients, companies]);
 
-  const ordered = useMemo(
-    () => [...health].sort((a, b) => a.score - b.score),
-    [health],
-  );
+  const ordered = useMemo(() => [...health].sort((a, b) => a.score - b.score), [health]);
 
   return (
     <div className="space-y-6">

@@ -166,7 +166,10 @@ function ApprovalsPage() {
                   <div className="flex flex-col items-end gap-1.5">
                     <StatusBadge status={batch.status} />
                     <span className="text-[11px] text-muted-foreground">
-                      Notificação: {batch.notificationStatus ? statusLabel(batch.notificationStatus) : "não enviada"}
+                      Notificação:{" "}
+                      {batch.notificationStatus
+                        ? statusLabel(batch.notificationStatus)
+                        : "não enviada"}
                     </span>
                   </div>
                 </div>

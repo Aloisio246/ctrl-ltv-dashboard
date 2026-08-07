@@ -11,10 +11,7 @@ export const pct = new Intl.NumberFormat("pt-BR", {
   maximumFractionDigits: 1,
 });
 
-export function formatMetric(
-  value: number,
-  format: "number" | "currency" | "percent",
-): string {
+export function formatMetric(value: number, format: "number" | "currency" | "percent"): string {
   if (format === "currency") return brl.format(value);
   if (format === "percent") return pct.format(value);
   return num.format(value);
