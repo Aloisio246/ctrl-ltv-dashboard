@@ -14,7 +14,7 @@ import { ApiUnavailableState, EmptyState, LoadingState } from "@/components/stat
 import { Notice, type NoticeState } from "@/components/feedback";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { channelLabel } from "@/lib/status";
+import { channelLabel, statusLabel } from "@/lib/status";
 import { formatDateTime } from "@/lib/format";
 import {
   AlertDialog,
@@ -166,7 +166,7 @@ function ApprovalsPage() {
                   <div className="flex flex-col items-end gap-1.5">
                     <StatusBadge status={batch.status} />
                     <span className="text-[11px] text-muted-foreground">
-                      Notificação: {statusOnly(batch.notificationStatus)}
+                      Notificação: {batch.notificationStatus ? statusLabel(batch.notificationStatus) : "não enviada"}
                     </span>
                   </div>
                 </div>
@@ -292,9 +292,4 @@ function ApprovalsPage() {
       </AlertDialog>
     </div>
   );
-}
-
-function statusOnly(value: string | null | undefined) {
-  if (!value) return "não enviada";
-  return value.replace(/_/g, " ");
 }
