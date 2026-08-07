@@ -80,3 +80,44 @@ export const toneDotClasses: Record<StatusTone, string> = {
   info: "bg-violet",
   neutral: "bg-muted-foreground",
 };
+
+/** Statuses adicionais usados em aprovações, prospects e integrações. */
+Object.assign(STATUS_META, {
+  notified: { label: "Notificado", tone: "info" },
+  reviewed: { label: "Revisado", tone: "positive" },
+  new: { label: "Novo", tone: "info" },
+  contacted: { label: "Contatado", tone: "info" },
+  qualified: { label: "Qualificado", tone: "positive" },
+  proposal: { label: "Proposta", tone: "info" },
+  negotiation: { label: "Negociação", tone: "warning" },
+  won: { label: "Ganho", tone: "positive" },
+  lost: { label: "Perdido", tone: "danger" },
+  archived: { label: "Arquivado", tone: "neutral" },
+  churn: { label: "Churn", tone: "danger" },
+  churned: { label: "Churn", tone: "danger" },
+  not_configured: { label: "Não configurado", tone: "neutral" },
+  error: { label: "Erro", tone: "danger" },
+  disabled: { label: "Desativado", tone: "neutral" },
+  cold: { label: "Frio", tone: "neutral" },
+  warm: { label: "Morno", tone: "warning" },
+  hot: { label: "Quente", tone: "danger" },
+} satisfies Record<string, StatusMeta>);
+
+const CHANNEL_LABELS: Record<string, string> = {
+  whatsapp: "WhatsApp",
+  whatsapp_evolution: "WhatsApp",
+  email: "E-mail",
+  instagram: "Instagram",
+  instagram_dm: "Instagram",
+  sms: "SMS",
+  phone: "Telefone",
+  call: "Ligação",
+  webchat: "Chat do site",
+  manual: "Manual",
+};
+
+/** Nome do canal em português, sem expor identificadores técnicos. */
+export function channelLabel(value: string | null | undefined): string {
+  if (!value) return "Canal não informado";
+  return CHANNEL_LABELS[value.toLowerCase()] ?? value.replace(/_/g, " ");
+}

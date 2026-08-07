@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   Radar,
   Users,
+  Contact,
   KanbanSquare,
   MessagesSquare,
   ShieldCheck,
@@ -23,10 +24,7 @@ export type ModuleDef = {
   phase: "live" | "planned";
 };
 
-/**
- * Mapa canônico do Ctrl LTV. Contatos e empresas são entidades internas
- * exibidas dentro de Prospects e Clientes — não módulos de navegação.
- */
+/** Mapa canônico de navegação do Ctrl LTV. */
 export const MODULES: ModuleDef[] = [
   {
     key: "dashboard",
@@ -42,6 +40,14 @@ export const MODULES: ModuleDef[] = [
     description: "Fontes, execuções e resultados brutos antes de virarem prospects.",
     to: "/capture",
     icon: Radar,
+    phase: "live",
+  },
+  {
+    key: "contacts",
+    label: "Contatos",
+    description: "Pessoas e empresas da base de relacionamento, prontas para prospecção.",
+    to: "/contacts",
+    icon: Contact,
     phase: "live",
   },
   {
