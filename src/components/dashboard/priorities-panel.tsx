@@ -5,7 +5,10 @@ import { AlarmClock, ShieldCheck, CalendarCheck, AlertTriangle } from "lucide-re
 import { cn } from "@/lib/utils";
 
 type Priority = DashboardSummary["priorities"][number];
-const kindMeta: Record<Priority["kind"], { icon: React.ComponentType<{ className?: string }>; label: string }> = {
+const kindMeta: Record<
+  Priority["kind"],
+  { icon: React.ComponentType<{ className?: string }>; label: string }
+> = {
   followup: { icon: AlarmClock, label: "Follow-up" },
   approval: { icon: ShieldCheck, label: "Aprovação" },
   risk: { icon: AlertTriangle, label: "Risco" },
@@ -16,13 +19,16 @@ const sevStyle: Record<Priority["severity"], string> = {
   high: "bg-danger/10 text-danger ring-danger/25",
 };
 
-function dueLabel(value: string) {
-  const due = new Date(value);
+import { parseDate, formatDate } from "@/lib/format";
+
+function dueLabel(value: string | number | Date | null | undefined) {
+  const due = parseDate(value);
+  if (!due) return "—";
   const diffDays = Math.ceil((due.getTime() - Date.now()) / 86_400_000);
   if (diffDays < 0) return `Atrasado ${Math.abs(diffDays)}d`;
   if (diffDays === 0) return "Hoje";
   if (diffDays === 1) return "Amanhã";
-  return due.toLocaleDateString("pt-BR");
+  return formatDate(due);
 }
 
 export function PrioritiesPanel({ data: priorities }: { data: DashboardSummary["priorities"] }) {
@@ -35,9 +41,7 @@ export function PrioritiesPanel({ data: priorities }: { data: DashboardSummary["
     >
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="font-display text-lg font-semibold tracking-tight">
-            Prioridades de hoje
-          </h2>
+          <h2 className="font-display text-lg font-semibold tracking-tight">Prioridades de hoje</h2>
           <p className="text-xs text-muted-foreground">
             Follow-ups, aprovações, reuniões e riscos que exigem ação
           </p>
@@ -48,7 +52,11 @@ export function PrioritiesPanel({ data: priorities }: { data: DashboardSummary["
       </div>
 
       <ul className="flex flex-col gap-2">
-        {priorities.length === 0 && <li className="rounded-lg border border-border/60 p-6 text-center text-sm text-muted-foreground">Nenhuma prioridade pendente.</li>}
+        {priorities.length === 0 && (
+          <li className="rounded-lg border border-border/60 p-6 text-center text-sm text-muted-foreground">
+            Nenhuma prioridade pendente.
+          </li>
+        )}
         {priorities.map((p, i) => {
           const meta = kindMeta[p.kind];
           const Icon = meta.icon;
@@ -73,13 +81,16 @@ export function PrioritiesPanel({ data: priorities }: { data: DashboardSummary["
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     {meta.label}
                   </span>
-                  <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1", sevStyle[p.severity])}>
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1",
+                      sevStyle[p.severity],
+                    )}
+                  >
                     {dueLabel(p.dueAt)}
                   </span>
                 </div>
-                <div className="mt-0.5 truncate text-sm font-medium text-foreground">
-                  {p.title}
-                </div>
+                <div className="mt-0.5 truncate text-sm font-medium text-foreground">{p.title}</div>
                 <div className="truncate text-xs text-muted-foreground">{p.subtitle}</div>
               </div>
             </motion.li>
