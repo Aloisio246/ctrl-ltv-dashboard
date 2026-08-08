@@ -122,11 +122,10 @@ export function buildOpportunityViews({
   for (const opportunity of opportunities) {
     const prospect = prospectById.get(opportunity.prospectId) ?? null;
     const company = prospect ? (companyById.get(prospect.companyId) ?? null) : null;
-    const contact = prospect
-      ? (contactsByCompany.get(prospect.companyId)?.[0] ?? null)
-      : null;
+    const contact = prospect ? (contactsByCompany.get(prospect.companyId)?.[0] ?? null) : null;
 
-    const title = contact?.name?.trim() || company?.name?.trim() || "Oportunidade sem identificação";
+    const title =
+      contact?.name?.trim() || company?.name?.trim() || "Oportunidade sem identificação";
     const subtitle =
       contact?.name?.trim() && company?.name?.trim() && contact.name.trim() !== company.name.trim()
         ? company.name.trim()
@@ -138,7 +137,7 @@ export function buildOpportunityViews({
 
     const ownerLabel =
       prospect?.ownerUserId && currentUserId && prospect.ownerUserId === currentUserId
-        ? (currentUserName?.trim() || "Você")
+        ? currentUserName?.trim() || "Você"
         : null;
 
     views.set(opportunity.id, {

@@ -207,7 +207,8 @@ function PipelinePage() {
       if (term && !view.searchIndex.includes(term)) return false;
       if (ownerFilter === "mine" && !view.ownerLabel) return false;
       if (ownerFilter === "unassigned" && view.ownerLabel) return false;
-      if (nextActionFilter === "overdue" && view.nextActivityTiming?.tone !== "danger") return false;
+      if (nextActionFilter === "overdue" && view.nextActivityTiming?.tone !== "danger")
+        return false;
       if (nextActionFilter === "none" && view.nextActivity) return false;
       return true;
     });

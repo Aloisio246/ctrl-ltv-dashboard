@@ -3,7 +3,13 @@ import { CalendarClock, Contact as ContactIcon, MessagesSquare } from "lucide-re
 import type { PipelineStage } from "@/lib/api-client";
 import type { OpportunityView } from "@/lib/pipeline-view";
 import { formatCurrency, activityTypeLabel } from "@/lib/pipeline-view";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { AppSelect } from "@/components/ui/app-select";
@@ -82,10 +88,7 @@ export function OpportunityDrawer({
                 <Field label="Responsável" value={view.ownerLabel ?? "Não atribuído"} />
                 <Field label="Origem" value={view.source} />
                 <Field label="Previsão" value={formatDate(view.expectedCloseAt)} />
-                <Field
-                  label="Score"
-                  value={view.score !== null ? String(view.score) : undefined}
-                />
+                <Field label="Score" value={view.score !== null ? String(view.score) : undefined} />
               </dl>
             </section>
 

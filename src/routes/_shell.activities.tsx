@@ -114,7 +114,8 @@ function ActivitiesPage() {
     const companyById = new Map(companies.map((item) => [item.id, item]));
     const contactByCompany = new Map<string, Contact>();
     for (const contact of contacts) {
-      if (!contactByCompany.has(contact.companyId)) contactByCompany.set(contact.companyId, contact);
+      if (!contactByCompany.has(contact.companyId))
+        contactByCompany.set(contact.companyId, contact);
     }
     const prospectById = new Map(prospects.map((item) => [item.id, item]));
     const opportunityById = new Map(opportunities.map((item) => [item.id, item]));
@@ -139,7 +140,7 @@ function ActivitiesPage() {
     };
   }, [companies, contacts, prospects, opportunities]);
 
-  const now = useMemo(() => new Date(), [activities]);
+  const now = useMemo(() => new Date(), []);
 
   const enriched = useMemo(
     () =>
