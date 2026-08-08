@@ -35,6 +35,9 @@ import { StatusBadge } from "@/components/ui/status-badge";
 const mod = getModule("contacts")!;
 
 export const Route = createFileRoute("/_shell/contacts")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    q: typeof search.q === "string" ? search.q : undefined,
+  }),
   head: () => ({
     meta: [
       { title: `${mod.label} · Ctrl LTV` },
@@ -110,7 +113,8 @@ function ContactsPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const { q } = Route.useSearch();
+  const [search, setSearch] = useState(q ?? "");
   const [relation, setRelation] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
