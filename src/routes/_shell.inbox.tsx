@@ -14,6 +14,9 @@ import { formatDateTime } from "@/lib/format";
 const mod = getModule("inbox")!;
 
 export const Route = createFileRoute("/_shell/inbox")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    q: typeof search.q === "string" ? search.q : undefined,
+  }),
   head: () => ({
     meta: [
       { title: `${mod.label} · Ctrl LTV` },

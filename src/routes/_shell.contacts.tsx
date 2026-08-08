@@ -35,6 +35,9 @@ import { StatusBadge } from "@/components/ui/status-badge";
 const mod = getModule("contacts")!;
 
 export const Route = createFileRoute("/_shell/contacts")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    q: typeof search.q === "string" ? search.q : undefined,
+  }),
   head: () => ({
     meta: [
       { title: `${mod.label} · Ctrl LTV` },
