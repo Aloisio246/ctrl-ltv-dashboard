@@ -35,10 +35,11 @@ function conversationTitle(conversation: Conversation) {
 }
 
 function InboxPage() {
+  const { q } = Route.useSearch();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(q ?? "");
   const [status, setStatus] = useState("all");
   const [channel, setChannel] = useState("all");
 
